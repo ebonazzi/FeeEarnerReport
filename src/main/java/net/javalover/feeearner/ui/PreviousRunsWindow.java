@@ -26,8 +26,14 @@ public class PreviousRunsWindow {
 
         // --- Top table (RunInfo) ---
         var topTable = new TableView<RunInfo>();
-        var runs = FXCollections.observableArrayList(runRepo.getAllRuns());
-        topTable.setItems(runs);
+        try {
+            topTable.setItems(FXCollections.observableArrayList(runRepo.getAllRuns()));
+        } catch (Exception ex) {
+            var alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setContentText("Failed to load runs: " + String.valueOf(ex.getMessage()));
+            alert.showAndWait();
+        }
 
         var runIdCol = new TableColumn<RunInfo, String>("Run ID");
         runIdCol.setCellValueFactory(c ->
@@ -88,6 +94,7 @@ public class PreviousRunsWindow {
                     if (event.getClickCount() == 2 && !isEmpty() && getTableRow() != null
                             && getTableRow().getItem() != null) {
                         new SpreadsheetViewerWindow(getTableRow().getItem()).show(stage);
+                        event.consume();
                     }
                 });
             }
@@ -123,7 +130,16 @@ public class PreviousRunsWindow {
         topTable.getSelectionModel().selectedItemProperty()
             .addListener((obs, oldVal, newVal) -> {
                 if (newVal != null) {
-                    bottomItems.setAll(runRepo.getFeeEarnerRunsForRun(newVal.runId()));
+                    try {
+                        bottomItems.setAll(runRepo.getFeeEarnerRunsForRun(newVal.runId()));
+                    } catch (Exception ex) {
+                        var alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setTitle("Error");
+                        alert.setContentText("Failed to load fee earner runs: " + String.valueOf(ex.getMessage()));
+                        alert.showAndWait();
+                    }
+                } else {
+                    bottomItems.clear();
                 }
             });
 
