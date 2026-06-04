@@ -80,6 +80,38 @@ public class RunRepository {
         }
     }
 
+    public List<RunInfo> getAllRuns() {
+        var sql = "SELECT run_id, day_run, started_at, finished_at " +
+                  "FROM report.spreadsheet_run ORDER BY started_at DESC";
+        try (var conn = ds.getConnection();
+             var stmt = conn.prepareStatement(sql);
+             var rs   = stmt.executeQuery()) {
+            var result = new ArrayList<RunInfo>();
+            while (rs.next()) result.add(mapRunInfo(rs));
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load all runs", e);
+        }
+    }
+
+    public List<FeeEarnerRun> getFeeEarnerRunsForRun(int runId) {
+        var sql = "SELECT run_id, day_run, usrID, [Fee Earner], usrEmail, " +
+                  "excel_filename, excel_spreadsheet, stored_at " +
+                  "FROM report.FeeEarnersRun WHERE run_id = ? " +
+                  "ORDER BY [Fee Earner]";
+        try (var conn = ds.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, runId);
+            try (var rs = stmt.executeQuery()) {
+                var result = new ArrayList<FeeEarnerRun>();
+                while (rs.next()) result.add(mapRun(rs));
+                return result;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load fee earner runs for runId=" + runId, e);
+        }
+    }
+
     public Optional<FeeEarnerRun> getMostRecent(int usrID) {
         var sql = "SELECT TOP 1 run_id, day_run, usrID, [Fee Earner], usrEmail, " +
                   "excel_filename, excel_spreadsheet, stored_at " +
@@ -95,6 +127,16 @@ public class RunRepository {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to fetch most recent run for usrID=" + usrID, e);
         }
+    }
+
+    private RunInfo mapRunInfo(ResultSet rs) throws SQLException {
+        var finishedAt = rs.getTimestamp("finished_at");
+        return new RunInfo(
+            rs.getInt("run_id"),
+            rs.getDate("day_run").toLocalDate(),
+            rs.getTimestamp("started_at").toLocalDateTime(),
+            finishedAt != null ? finishedAt.toLocalDateTime() : null
+        );
     }
 
     private FeeEarnerRun mapRun(ResultSet rs) throws SQLException {

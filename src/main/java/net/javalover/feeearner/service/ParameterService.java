@@ -7,6 +7,7 @@ import net.javalover.feeearner.repository.ParamRepository;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 
 public class ParameterService {
@@ -21,6 +22,10 @@ public class ParameterService {
 
     public AppConfig load() {
         return AppConfig.from(paramRepo.loadAll());
+    }
+
+    public List<AppParam> loadAll() {
+        return paramRepo.loadAll();
     }
 
     public AppConfig reload() {
