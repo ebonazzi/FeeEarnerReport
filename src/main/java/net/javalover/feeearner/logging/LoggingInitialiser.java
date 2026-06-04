@@ -16,6 +16,10 @@ public final class LoggingInitialiser {
      * Rainbow Gum 0.8.0 reads these system properties during its lazy initialisation.
      */
     public static void init(String logDir, String level) {
+        if (logDir == null || logDir.isBlank())
+            throw new IllegalArgumentException("logDir must not be null or blank");
+        if (level == null || level.isBlank())
+            throw new IllegalArgumentException("level must not be null or blank");
         var logPath = Path.of(logDir, LOG_FILENAME).toAbsolutePath().toString();
 
         System.setProperty("rainbowgum.level", normalise(level));
