@@ -19,11 +19,11 @@ class SpreadsheetServiceTest {
 
     private static final LocalDate DAY = LocalDate.of(2026, 6, 5);
     private static final FeeEarner LEAD_FE =
-        new FeeEarner(100, "Alice Smith", "alice@law.com", true, "Lead");
+        new FeeEarner(100, "Alice Smith", "alice@law.com", true, "Enquiry");
     private static final FeeEarner MATTER_FE =
         new FeeEarner(200, "Bob Jones", "bob@law.com", true, "Matter");
     private static final FeeEarner INTERSECT_FE =
-        new FeeEarner(300, "Carol Lee", "carol@law.com", true, "Lead");
+        new FeeEarner(300, "Carol Lee", "carol@law.com", true, "Enquiry");
 
     private AppConfig configFor(Path dir) {
         return AppConfig.from(List.of(

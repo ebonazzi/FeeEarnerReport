@@ -87,7 +87,8 @@ public class SpreadsheetService {
     private void doGenerate(FeeEarner fe, Set<Integer> intersectIds,
                             int runId, LocalDate dayRun, AppConfig config,
                             boolean isNewRun) throws IOException {
-        boolean isLead = fe.type().equalsIgnoreCase("Lead");
+        // fn_VIC_Lead_Active_FeeEarners returns [Type]='Enquiry' (not 'Lead'); matter side returns 'Matter'
+        boolean isLead = fe.type().equalsIgnoreCase("Enquiry");
         boolean isMatter = fe.type().equalsIgnoreCase("Matter");
         boolean inIntersect = intersectIds.contains(fe.usrID());
 
