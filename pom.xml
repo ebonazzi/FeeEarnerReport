@@ -66,6 +66,13 @@
             <artifactId>rainbowgum-jdk</artifactId>
             <version>${rainbowgum.version}</version>
         </dependency>
+        <!-- SLF4J -> Rainbow Gum binding (provides the SLF4JServiceProvider; without it
+             all SLF4J logging silently falls back to the no-op NOP logger) -->
+        <dependency>
+            <groupId>io.jstach.rainbowgum</groupId>
+            <artifactId>rainbowgum-slf4j</artifactId>
+            <version>${rainbowgum.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

@@ -61,7 +61,8 @@ public class FxApplication extends Application {
                 .show(primaryStage);
 
         } catch (Exception e) {
-            showError("Bootstrap failed: " + Objects.toString(e.getMessage(), e.getClass().getSimpleName()));
+            var cause = e.getCause() != null ? "\n\nCause: " + e.getCause().getMessage() : "";
+            showError("Bootstrap failed: " + Objects.toString(e.getMessage(), e.getClass().getSimpleName()) + cause);
             Platform.exit();
         }
     }
