@@ -69,7 +69,7 @@ BEGIN
         [Task Created Date]         uCreated        NULL,
         [Task Due Date]             datetime        NULL,
         [Task Complete]             bit             NULL,
-        [Type]                      varchar(6)      NULL
+        [Type]                      varchar(20)      NULL
     );
 END
 GO
@@ -99,7 +99,7 @@ BEGIN
         [Task Created Date]         uCreated        NULL,
         [Task Due Date]             datetime        NULL,
         [Task Complete]             bit             NULL,
-        [Type]                      varchar(6)      NULL,
+        [Type]                      varchar(20)      NULL,
         [Key Words]                 nvarchar(4000)  NULL
     );
 END
@@ -130,7 +130,7 @@ BEGIN
         [Task Created Date]         uCreated        NULL,
         [Task Due Date]             datetime        NULL,
         [Task Complete]             bit             NULL,
-        [Type]                      varchar(6)      NULL
+        [Type]                      varchar(20)      NULL
     );
 END
 GO
@@ -160,7 +160,7 @@ BEGIN
         [Task Created Date]         uCreated        NULL,
         [Task Due Date]             datetime        NULL,
         [Task Complete]             bit             NULL,
-        [Type]                      varchar(6)      NULL,
+        [Type]                      varchar(20)      NULL,
         Duplicate                   varchar(3)      NULL
     );
 END
@@ -191,7 +191,7 @@ BEGIN
         [Task Created Date]         uCreated        NULL,
         [Task Due Date]             datetime        NULL,
         [Task Complete]             bit             NULL,
-        [Type]                      varchar(6)      NULL,
+        [Type]                      varchar(20)      NULL,
         [Matter Row Count]          int             NULL
     );
 END
