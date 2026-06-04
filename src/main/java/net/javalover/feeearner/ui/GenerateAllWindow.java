@@ -89,6 +89,7 @@ public class GenerateAllWindow {
             timeline.play();
 
             var thread = new Thread(() -> {
+                boolean[] showCompletionAlert = { true };
                 try {
                     var leadFEs   = feeEarnerRepo.getLeadFeeEarners();
                     var matterFEs = feeEarnerRepo.getMatterFeeEarners();
@@ -101,13 +102,15 @@ public class GenerateAllWindow {
                     spreadsheetSvc.generateAll(feeEarners, runId, LocalDate.now(), config, tracker);
                     runService.finishRun(runId);
                 } catch (Exception ex) {
+                    showCompletionAlert[0] = false;
                     Platform.runLater(() -> {
                         var alert = new Alert(Alert.AlertType.ERROR);
                         alert.setTitle("Error");
-                        alert.setContentText("Generation failed: " + ex.getMessage());
+                        alert.setContentText("Generation failed: " + String.valueOf(ex.getMessage()));
                         alert.showAndWait();
                     });
                 } finally {
+                    final boolean show = showCompletionAlert[0];
                     Platform.runLater(() -> {
                         timeline.stop();
                         var t = trackerRef[0];
@@ -117,13 +120,15 @@ public class GenerateAllWindow {
                             completedLabel.setText("Completed: " + (completed + failed));
                             remainingLabel.setText("Remaining: 0");
                         }
-                        var alert = new Alert(Alert.AlertType.INFORMATION);
-                        alert.setTitle("Complete");
-                        alert.setContentText("Generation complete. Completed: " +
-                            (trackerRef[0] != null ? trackerRef[0].completed().get() : 0) +
-                            "  Failed: " +
-                            (trackerRef[0] != null ? trackerRef[0].failed().get() : 0));
-                        alert.showAndWait();
+                        if (show) {
+                            var alert = new Alert(Alert.AlertType.INFORMATION);
+                            alert.setTitle("Complete");
+                            alert.setContentText("Generation complete. Completed: " +
+                                (trackerRef[0] != null ? trackerRef[0].completed().get() : 0) +
+                                "  Failed: " +
+                                (trackerRef[0] != null ? trackerRef[0].failed().get() : 0));
+                            alert.showAndWait();
+                        }
                         generateBtn.setDisable(false);
                     });
                 }
