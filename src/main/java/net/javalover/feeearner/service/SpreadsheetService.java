@@ -68,17 +68,20 @@ public class SpreadsheetService {
         }
 
         int total = feeEarners.size();
-        for (int i = 0; i < total; i++) {
-            try {
-                completion.take().get();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (ExecutionException ignored) {
-                // exceptions are caught inside the Callable and recorded in tracker
+        try {
+            for (int i = 0; i < total; i++) {
+                try {
+                    completion.take().get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (ExecutionException ignored) {
+                    // exceptions are caught inside the Callable and recorded in tracker
+                }
             }
+        } finally {
+            pool.shutdown();
         }
-        pool.shutdown();
     }
 
     private void doGenerate(FeeEarner fe, Set<Integer> intersectIds,
@@ -114,22 +117,23 @@ public class SpreadsheetService {
         String filename = "fe_" + fe.usrID() + "_" + dayRun.format(DATE_FMT) + "_" + runId + ".xlsx";
         Path file = Path.of(config.outputDir()).resolve(filename);
         Files.write(file, xlsx);
+        try {
+            archiveRepo.insertFullTaskRows(runId, dayRun, fe.usrID(), fullTask);
+            archiveRepo.insertLimitationRows(runId, dayRun, fe.usrID(), limitation);
+            archiveRepo.insertAgedRows(runId, dayRun, fe.usrID(), aged);
+            archiveRepo.insertDuplicateRows(runId, dayRun, fe.usrID(), duplicate);
+            archiveRepo.insertHighVolumeRows(runId, dayRun, fe.usrID(), highVolume);
 
-        archiveRepo.insertFullTaskRows(runId, dayRun, fe.usrID(), fullTask);
-        archiveRepo.insertLimitationRows(runId, dayRun, fe.usrID(), limitation);
-        archiveRepo.insertAgedRows(runId, dayRun, fe.usrID(), aged);
-        archiveRepo.insertDuplicateRows(runId, dayRun, fe.usrID(), duplicate);
-        archiveRepo.insertHighVolumeRows(runId, dayRun, fe.usrID(), highVolume);
-
-        byte[] stored = Files.readAllBytes(file);
-        if (isNewRun) {
-            runRepo.insertFeeEarnerRun(
-                new FeeEarnerRun(runId, dayRun, fe.usrID(), fe.feeEarner(),
-                                 fe.usrEmail(), filename, stored, null));
-        } else {
-            runRepo.updateFeeEarnerRun(runId, fe.usrID(), filename, stored);
+            byte[] stored = Files.readAllBytes(file);
+            if (isNewRun) {
+                runRepo.insertFeeEarnerRun(
+                    new FeeEarnerRun(runId, dayRun, fe.usrID(), fe.feeEarner(),
+                                     fe.usrEmail(), filename, stored, null));
+            } else {
+                runRepo.updateFeeEarnerRun(runId, fe.usrID(), filename, stored);
+            }
+        } finally {
+            Files.delete(file);
         }
-
-        Files.delete(file);
     }
 }
