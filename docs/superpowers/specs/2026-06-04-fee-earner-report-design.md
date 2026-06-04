@@ -277,11 +277,11 @@ Delegates each to its `SheetBuilder`. Calls `sheet.autoSizeColumn(i)` after all 
 
 ### 8.2 Sheet builders
 Each builder:
-- Writes a bold, freeze-pane-locked header row (row 0)
+- Writes a bold header row (row 0); first row frozen via `sheet.createFreezePane(0, 1)` (Excel "Freeze Top Row")
+- Applies auto-filter across all columns via `sheet.setAutoFilter(new CellRangeAddress(0, 0, 0, lastColIndex))`
 - Writes data rows (1-based index = archive `row_number`)
 - Uses a shared `CellStyle` for date columns (`dd/MM/yyyy`)
-- The `[Type]` column always present
-- Columns match exactly the archive table column order
+- **`[Type]` column is always the first (leftmost) column** — index 0; remaining columns follow archive table order
 
 ### 8.3 File naming
 `fe_<usrID>_<YYYYMMDD>_<runId>.xlsx`  
@@ -289,7 +289,7 @@ Example: `fe_33800_20260605_1.xlsx`
 Month and day zero-padded via `DateTimeFormatter.ofPattern("yyyyMMdd")`.
 
 ### 8.4 Row merge logic
-When a fee earner appears in both Lead and Matter lists, rows from both `fn_VIC_Lead_*` and `fn_VIC_Matter_*` are fetched and concatenated. No de-duplication is performed — the `[Type]` column distinguishes source.
+When a fee earner appears in both Lead and Matter lists, rows from both `fn_VIC_Lead_*` and `fn_VIC_Matter_*` are fetched and concatenated. No de-duplication is performed — the `[Type]` column (column 0) distinguishes source.
 
 ---
 
