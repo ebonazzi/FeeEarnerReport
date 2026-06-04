@@ -58,7 +58,7 @@ public class SpreadsheetViewerWindow {
                 table.setEditable(false);
 
                 var headerRow = sheet.getRow(0);
-                int colCount = headerRow != null ? headerRow.getLastCellNum() : 0;
+                int colCount = (headerRow != null && headerRow.getLastCellNum() > 0) ? headerRow.getLastCellNum() : 0;
                 for (int c = 0; c < colCount; c++) {
                     final int colIdx = c;
                     String header = headerRow.getCell(c) != null
@@ -91,7 +91,7 @@ public class SpreadsheetViewerWindow {
             }
             return tabPane;
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read spreadsheet", e);
+            return new Label("Cannot read spreadsheet: " + e.getMessage());
         }
     }
 }
