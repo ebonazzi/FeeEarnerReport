@@ -5,7 +5,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
@@ -68,21 +68,23 @@ public class SingleGenerateWindow {
         stage.show();
     }
 
-    @SuppressWarnings("unchecked")
     private TableView<FeeEarner> buildTable(Stage stage) {
         var table = new TableView<FeeEarner>();
 
-        var idCol = new TableColumn<FeeEarner, Integer>("User ID");
+        var idCol = new TableColumn<FeeEarner, String>("User ID");
         idCol.setPrefWidth(80);
-        idCol.setCellValueFactory(new PropertyValueFactory<>("usrID"));
+        idCol.setCellValueFactory(data -> new SimpleStringProperty(
+                String.valueOf(data.getValue().usrID())));
 
         var nameCol = new TableColumn<FeeEarner, String>("Fee Earner");
         nameCol.setPrefWidth(220);
-        nameCol.setCellValueFactory(new PropertyValueFactory<>("feeEarner"));
+        nameCol.setCellValueFactory(data -> new SimpleStringProperty(
+                data.getValue().feeEarner()));
 
         var emailCol = new TableColumn<FeeEarner, String>("Email");
         emailCol.setPrefWidth(220);
-        emailCol.setCellValueFactory(new PropertyValueFactory<>("usrEmail"));
+        emailCol.setCellValueFactory(data -> new SimpleStringProperty(
+                data.getValue().usrEmail()));
 
         var actionCol = new TableColumn<FeeEarner, Void>("Action");
         actionCol.setPrefWidth(120);
@@ -128,7 +130,7 @@ public class SingleGenerateWindow {
         } catch (Exception ex) {
             showAlert(owner, Alert.AlertType.ERROR,
                       "Error",
-                      ex.getMessage());
+                      ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
         }
     }
 
