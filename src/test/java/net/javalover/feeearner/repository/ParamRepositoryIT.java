@@ -23,4 +23,11 @@ class ParamRepositoryIT {
         repo.loadAll().forEach(p ->
             assertFalse(p.name().isBlank(), "param name should not be blank"));
     }
+
+    @Test
+    void saveThrowsForNonExistentId() {
+        var ghost = new net.javalover.feeearner.model.AppParam(
+            Integer.MAX_VALUE, "ghost", "value", "", true);
+        assertThrows(RuntimeException.class, () -> repo.save(ghost));
+    }
 }

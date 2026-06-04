@@ -36,7 +36,9 @@ public class ParamRepository {
              var stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, param.value());
             stmt.setInt(2, param.paramId());
-            stmt.executeUpdate();
+            int rows = stmt.executeUpdate();
+            if (rows == 0)
+                throw new RuntimeException("No parameter found with id=" + param.paramId());
         } catch (SQLException e) {
             throw new RuntimeException("Failed to save parameter id=" + param.paramId(), e);
         }
