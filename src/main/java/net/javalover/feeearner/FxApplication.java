@@ -14,6 +14,7 @@ import net.javalover.feeearner.logging.LoggingInitialiser;
 import net.javalover.feeearner.repository.*;
 import net.javalover.feeearner.service.*;
 import net.javalover.feeearner.ui.MainWindow;
+import java.util.Objects;
 
 public class FxApplication extends Application {
 
@@ -60,7 +61,7 @@ public class FxApplication extends Application {
                 .show(primaryStage);
 
         } catch (Exception e) {
-            showError("Bootstrap failed: " + e.getMessage());
+            showError("Bootstrap failed: " + Objects.toString(e.getMessage(), e.getClass().getSimpleName()));
             Platform.exit();
         }
     }
