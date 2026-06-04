@@ -7,6 +7,10 @@ import java.util.stream.Collectors;
 
 public record AppConfig(Map<String, String> params) {
 
+    public AppConfig {
+        params = Map.copyOf(params);
+    }
+
     public static AppConfig from(List<AppParam> paramList) {
         var map = paramList.stream()
             .filter(AppParam::active)
@@ -28,7 +32,12 @@ public record AppConfig(Map<String, String> params) {
     public int getInt(String name, int defaultValue) {
         var v = params.get(name);
         if (v == null) return defaultValue;
-        return Integer.parseInt(v.trim());
+        try {
+            return Integer.parseInt(v.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException(
+                "Parameter '" + name + "' is not a valid integer: " + v.trim(), e);
+        }
     }
 
     public String logDir()            { return require("log_dir"); }
