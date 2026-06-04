@@ -131,10 +131,14 @@ public class RunRepository {
 
     private RunInfo mapRunInfo(ResultSet rs) throws SQLException {
         var finishedAt = rs.getTimestamp("finished_at");
+        var startedAt  = rs.getTimestamp("started_at");
+        if (startedAt == null) {
+            throw new RuntimeException("started_at is NULL for run_id=" + rs.getInt("run_id"));
+        }
         return new RunInfo(
             rs.getInt("run_id"),
             rs.getDate("day_run").toLocalDate(),
-            rs.getTimestamp("started_at").toLocalDateTime(),
+            startedAt.toLocalDateTime(),
             finishedAt != null ? finishedAt.toLocalDateTime() : null
         );
     }
