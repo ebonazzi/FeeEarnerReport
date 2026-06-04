@@ -115,6 +115,7 @@ public class ArchiveRepository {
     private <T extends BaseRow> void batchInsert(
             String sql, int runId, LocalDate dayRun, int usrID,
             List<T> rows, RowBinder<T> binder) {
+        if (rows == null || rows.isEmpty()) return;
         try (var conn = ds.getConnection();
              var stmt = conn.prepareStatement(sql)) {
             int rowNum = 1;
@@ -130,7 +131,10 @@ public class ArchiveRepository {
 
     private static void setBaseRowParams(PreparedStatement stmt, BaseRow row, int offset)
             throws SQLException {
-        stmt.setDate(offset,     row.reportDate() != null ? Date.valueOf(row.reportDate()) : null);
+        if (row.reportDate() != null)
+            stmt.setDate(offset, Date.valueOf(row.reportDate()));
+        else
+            stmt.setNull(offset, java.sql.Types.DATE);
         stmt.setString(offset+1, row.matterNumber());
         stmt.setString(offset+2, row.matterNameDescription());
         stmt.setString(offset+3, row.department());
@@ -144,12 +148,14 @@ public class ArchiveRepository {
         stmt.setString(offset+11, row.taskType());
         stmt.setString(offset+12, row.taskNotes());
         stmt.setString(offset+13, row.taskOwner());
-        Timestamp created = row.taskCreatedDate() != null
-            ? Timestamp.valueOf(row.taskCreatedDate()) : null;
-        stmt.setTimestamp(offset+14, created);
-        Timestamp due = row.taskDueDate() != null
-            ? Timestamp.valueOf(row.taskDueDate()) : null;
-        stmt.setTimestamp(offset+15, due);
+        if (row.taskCreatedDate() != null)
+            stmt.setTimestamp(offset+14, Timestamp.valueOf(row.taskCreatedDate()));
+        else
+            stmt.setNull(offset+14, java.sql.Types.TIMESTAMP);
+        if (row.taskDueDate() != null)
+            stmt.setTimestamp(offset+15, Timestamp.valueOf(row.taskDueDate()));
+        else
+            stmt.setNull(offset+15, java.sql.Types.TIMESTAMP);
         stmt.setString(offset+16, row.type());
     }
 }

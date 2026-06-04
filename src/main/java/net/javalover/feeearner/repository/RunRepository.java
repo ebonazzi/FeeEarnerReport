@@ -21,8 +21,8 @@ public class RunRepository {
         var sql = "INSERT INTO report.spreadsheet_run (day_run, started_at) " +
                   "OUTPUT INSERTED.run_id VALUES (CAST(GETDATE() AS DATE), GETDATE())";
         try (var conn = ds.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
-            var rs = stmt.executeQuery();
+             var stmt = conn.prepareStatement(sql);
+             var rs   = stmt.executeQuery()) {
             if (rs.next()) return rs.getInt(1);
             throw new RuntimeException("INSERT returned no generated run_id");
         } catch (SQLException e) {
@@ -88,9 +88,10 @@ public class RunRepository {
         try (var conn = ds.getConnection();
              var stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, usrID);
-            var rs = stmt.executeQuery();
-            if (!rs.next()) return Optional.empty();
-            return Optional.of(mapRun(rs));
+            try (var rs = stmt.executeQuery()) {
+                if (!rs.next()) return Optional.empty();
+                return Optional.of(mapRun(rs));
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to fetch most recent run for usrID=" + usrID, e);
         }
