@@ -37,3 +37,6 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Test credentials (local only — never commit) ###
+src/test/resources/test-credentials.properties
