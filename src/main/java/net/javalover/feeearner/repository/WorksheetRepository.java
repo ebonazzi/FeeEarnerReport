@@ -19,15 +19,15 @@ public class WorksheetRepository {
     // ── Lead functions ────────────────────────────────────────────────────────
 
     public List<FullTaskRow> getLeadFullTaskData(int usrID) {
-        return queryFull("SELECT * FROM report.fn_VIC_Lead_Full_Task_Report(?)", usrID);
+        return queryFull("SELECT * FROM report.fn_VIC_Lead_Full_Task_Data(?)", usrID);
     }
 
     public List<LimitationRow> getLeadLimitation(int usrID) {
-        return queryLimitation("SELECT * FROM report.fn_VIC_Lead_Limitation_Tasks_Report(?)", usrID);
+        return queryLimitation("SELECT * FROM report.fn_VIC_Lead_Limitation_Report(?)", usrID);
     }
 
     public List<AgedRow> getLeadAged(int usrID) {
-        return queryAged("SELECT * FROM report.fn_VIC_Lead_Aged_Tasks_Report(?)", usrID);
+        return queryAged("SELECT * FROM report.fn_VIC_Lead_Aged_Report(?)", usrID);
     }
 
     public List<DuplicateRow> getLeadDuplicate(int usrID) {
@@ -41,15 +41,15 @@ public class WorksheetRepository {
     // ── Matter functions ──────────────────────────────────────────────────────
 
     public List<FullTaskRow> getMatterFullTaskData(int usrID) {
-        return queryFull("SELECT * FROM report.fn_VIC_Matter_Full_Task_Report(?)", usrID);
+        return queryFull("SELECT * FROM report.fn_VIC_Matter_Full_Task_Data(?)", usrID);
     }
 
     public List<LimitationRow> getMatterLimitation(int usrID) {
-        return queryLimitation("SELECT * FROM report.fn_VIC_Matter_Limitation_Tasks_Report(?)", usrID);
+        return queryLimitation("SELECT * FROM report.fn_VIC_Matter_Limitation_Report(?)", usrID);
     }
 
     public List<AgedRow> getMatterAged(int usrID) {
-        return queryAged("SELECT * FROM report.fn_VIC_Matter_Aged_Tasks_Report(?)", usrID);
+        return queryAged("SELECT * FROM report.fn_VIC_Matter_Aged_Report(?)", usrID);
     }
 
     public List<DuplicateRow> getMatterDuplicate(int usrID) {
