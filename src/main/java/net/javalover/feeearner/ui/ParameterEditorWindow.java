@@ -63,9 +63,17 @@ public class ParameterEditorWindow {
                     return;
                 }
             }
-            table.getItems().forEach(paramSvc::save);
-            paramSvc.reload();
-            stage.close();
+            try {
+                table.getItems().forEach(paramSvc::save);
+                paramSvc.reload();
+                stage.close();
+            } catch (Exception ex) {
+                var alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Save Failed");
+                alert.setHeaderText("Could not save parameters");
+                alert.setContentText(ex.getMessage());
+                alert.showAndWait();
+            }
         });
 
         cancelBtn.setOnAction(e -> stage.close());
