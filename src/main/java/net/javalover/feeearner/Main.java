@@ -68,7 +68,7 @@ public class Main {
                 System.err.printf("  FAILED usrID=%d name='%s': %s%n",
                     f.usrID(), f.feeEarner(), f.errorMessage());
             }
-            System.exit(0);
+            System.exit(tracker.failed().get() > 0 ? 2 : 0);
 
         } catch (Exception e) {
             System.err.println("Bootstrap failed: " + e.getMessage());
