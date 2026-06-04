@@ -77,16 +77,16 @@ abstract class BaseSheetBuilder<T extends BaseRow> {
     }
 
     protected void setDate(XSSFRow row, int col, LocalDate date, XSSFCellStyle style) {
-        var cell = row.createCell(col);
         if (date != null) {
+            var cell = row.createCell(col);
             cell.setCellValue(date);
             cell.setCellStyle(style);
         }
     }
 
     protected void setDateTime(XSSFRow row, int col, LocalDateTime dt, XSSFCellStyle style) {
-        var cell = row.createCell(col);
         if (dt != null) {
+            var cell = row.createCell(col);
             cell.setCellValue(dt);
             cell.setCellStyle(style);
         }
