@@ -27,7 +27,7 @@ class ParamRepositoryIT {
     @Test
     void saveThrowsForNonExistentId() {
         var ghost = new net.javalover.feeearner.model.AppParam(
-            Integer.MAX_VALUE, "ghost", "value", "", true);
+            Integer.MAX_VALUE, "ghost", "value", true);
         assertThrows(RuntimeException.class, () -> repo.save(ghost));
     }
 }

@@ -16,13 +16,13 @@ class MailSenderTest {
 
     private AppConfig config() {
         return AppConfig.from(List.of(
-            new AppParam(1, "smtp_server",      "localhost",            "", true),
-            new AppParam(2, "smtp_port",        "25",                   "", true),
-            new AppParam(3, "email_sender",     "reports@law.com",      "", true),
-            new AppParam(4, "email_recipients", "a@law.com|b@law.com",  "", true),
-            new AppParam(5, "email_subject",    "Fee Earner Report",    "", true),
-            new AppParam(6, "email_body",       "Please find attached.", "", true),
-            new AppParam(7, "log_dir",          "/tmp",                 "", true)
+            new AppParam(1, "smtp_server",      "localhost",            true),
+            new AppParam(2, "smtp_port",        "25",                   true),
+            new AppParam(3, "email_sender",     "reports@law.com",      true),
+            new AppParam(4, "email_recipients", "a@law.com|b@law.com",  true),
+            new AppParam(5, "email_subject",    "Fee Earner Report",    true),
+            new AppParam(6, "email_body",       "Please find attached.", true),
+            new AppParam(7, "log_dir",          "/tmp",                 true)
         ));
     }
 

@@ -9,8 +9,8 @@ class AppConfigTest {
 
     @Test
     void fromFiltersInactiveParams() {
-        var active = new AppParam(1, "log_dir", "/tmp/logs", "", true);
-        var inactive = new AppParam(2, "output_dir", "/tmp/out", "", false);
+        var active = new AppParam(1, "log_dir", "/tmp/logs", true);
+        var inactive = new AppParam(2, "output_dir", "/tmp/out", false);
         var config = AppConfig.from(List.of(active, inactive));
         assertEquals("/tmp/logs", config.logDir());
         assertThrows(IllegalStateException.class, config::outputDir);
@@ -30,14 +30,14 @@ class AppConfigTest {
 
     @Test
     void getIntThrowsOnNonNumericValue() {
-        var param = new AppParam(1, "thread_pool_size", "notanumber", "2", true);
+        var param = new AppParam(1, "thread_pool_size", "notanumber", true);
         var config = AppConfig.from(List.of(param));
         assertThrows(IllegalStateException.class, config::threadPoolSize);
     }
 
     @Test
     void paramsMapIsImmutable() {
-        var param = new AppParam(1, "log_dir", "/tmp", "", true);
+        var param = new AppParam(1, "log_dir", "/tmp", true);
         var config = AppConfig.from(List.of(param));
         assertThrows(UnsupportedOperationException.class,
             () -> config.params().put("log_dir", "hacked"));

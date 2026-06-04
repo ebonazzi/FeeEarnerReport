@@ -20,12 +20,12 @@ class EmailServiceTest {
 
     private AppConfig config() {
         return AppConfig.from(List.of(
-            new AppParam(1, "smtp_server",  "localhost",       "", true),
-            new AppParam(2, "smtp_port",    "25",              "", true),
-            new AppParam(3, "email_sender", "reports@law.com", "", true),
-            new AppParam(4, "email_subject","Report",          "", true),
-            new AppParam(5, "email_body",   "See attached",    "", true),
-            new AppParam(6, "log_dir",      "/tmp",            "", true)
+            new AppParam(1, "smtp_server",  "localhost",       true),
+            new AppParam(2, "smtp_port",    "25",              true),
+            new AppParam(3, "email_sender", "reports@law.com", true),
+            new AppParam(4, "email_subject","Report",          true),
+            new AppParam(5, "email_body",   "See attached",    true),
+            new AppParam(6, "log_dir",      "/tmp",            true)
         ));
     }
 

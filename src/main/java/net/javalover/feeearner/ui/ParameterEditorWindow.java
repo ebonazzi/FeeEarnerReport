@@ -40,8 +40,7 @@ public class ParameterEditorWindow {
         valueCol.setEditable(true);
         valueCol.setOnEditCommit(event -> {
             var old = event.getRowValue();
-            var updated = new AppParam(old.paramId(), old.name(), event.getNewValue(),
-                    old.defaultValue(), old.active());
+            var updated = new AppParam(old.paramId(), old.name(), event.getNewValue(), old.active());
             table.getItems().set(event.getTablePosition().getRow(), updated);
         });
 

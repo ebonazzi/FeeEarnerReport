@@ -27,14 +27,14 @@ class SpreadsheetServiceTest {
 
     private AppConfig configFor(Path dir) {
         return AppConfig.from(List.of(
-            new AppParam(1, "output_dir",       dir.toString(),  dir.toString(),  true),
-            new AppParam(2, "thread_pool_size", "2",             "2",             true),
-            new AppParam(3, "log_dir",          dir.toString(),  dir.toString(),  true),
-            new AppParam(4, "email_sender",     "x@law.com",     "x@law.com",     true),
-            new AppParam(5, "email_subject",    "Report",        "Report",        true),
-            new AppParam(6, "email_body",       "See attached",  "See attached",  true),
-            new AppParam(7, "smtp_server",      "localhost",     "localhost",     true),
-            new AppParam(8, "smtp_port",        "25",            "25",            true)
+            new AppParam(1, "output_dir",       dir.toString(),  true),
+            new AppParam(2, "thread_pool_size", "2",             true),
+            new AppParam(3, "log_dir",          dir.toString(),  true),
+            new AppParam(4, "email_sender",     "x@law.com",     true),
+            new AppParam(5, "email_subject",    "Report",        true),
+            new AppParam(6, "email_body",       "See attached",  true),
+            new AppParam(7, "smtp_server",      "localhost",     true),
+            new AppParam(8, "smtp_port",        "25",            true)
         ));
     }
 

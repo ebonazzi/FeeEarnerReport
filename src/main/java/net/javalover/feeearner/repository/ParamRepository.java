@@ -16,7 +16,7 @@ public class ParamRepository {
     }
 
     public List<AppParam> loadAll() {
-        var sql = "SELECT param_id, parameter_name, parameter_value, default_value, active " +
+        var sql = "SELECT param_id, parameter_name, parameter_value, active " +
                   "FROM MCMBLIVE.report.report_param WHERE active = 1";
         try (var conn = ds.getConnection();
              var stmt = conn.prepareStatement(sql);
@@ -49,7 +49,6 @@ public class ParamRepository {
             rs.getInt("param_id"),
             rs.getString("parameter_name"),
             rs.getString("parameter_value"),
-            rs.getString("default_value"),
             rs.getBoolean("active")
         );
     }
