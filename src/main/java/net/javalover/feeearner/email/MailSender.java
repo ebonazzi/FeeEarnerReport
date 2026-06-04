@@ -17,6 +17,9 @@ public class MailSender {
     }
 
     public void send(FeeEarnerRun run) throws MessagingException {
+        if (run == null) throw new IllegalArgumentException("run must not be null");
+        if (run.usrEmail() == null || run.usrEmail().isBlank())
+            throw new IllegalArgumentException("run.usrEmail() must not be blank for usrID=" + run.usrID());
         var props = new Properties();
         props.put("mail.smtp.host", config.smtpServer());
         props.put("mail.smtp.port", String.valueOf(config.smtpPort()));
@@ -48,6 +51,10 @@ public class MailSender {
         body.setText(config.emailBody());
 
         var attachment = new MimeBodyPart();
+        if (run.excelSpreadsheet() == null) {
+            throw new IllegalStateException(
+                "No excel spreadsheet stored for usrID=" + run.usrID());
+        }
         attachment.setDataHandler(new DataHandler(
             new ByteArrayDataSource(run.excelSpreadsheet(),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")));
