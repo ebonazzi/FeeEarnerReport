@@ -44,6 +44,12 @@ public final class LoggingInitialiser {
         System.setProperty("logging.global.change", "true");
         System.setProperty("logging.change", "LEVEL");
 
+        // Floor noisy third-party loggers regardless of the app's root level. In
+        // particular the mssql-jdbc driver logs EVERY SQLException it builds at FINE
+        // (-> DEBUG), e.g. one line per duplicate-key row — pure noise, since the app
+        // already logs caught failures at ERROR. These floors don't move with debug_level.
+        applyQuietDefaults();
+
         Logger startupLogger = LoggerFactory.getLogger(LoggingInitialiser.class);
         startupLogger.info("Logging initialised — level={} file={}", level, logUri);
     }
@@ -59,6 +65,15 @@ public final class LoggingInitialiser {
         var gum = RainbowGum.getOrNull();
         if (gum != null)
             gum.config().changePublisher().publish();
+    }
+
+    /** Per-logger thresholds for chatty libraries, so app logs stay readable. */
+    private static void applyQuietDefaults() {
+        System.setProperty("logging.level.com.microsoft.sqlserver", "WARN");
+        System.setProperty("logging.level.com.zaxxer.hikari", "INFO");
+        System.setProperty("logging.level.jakarta.mail", "WARN");
+        System.setProperty("logging.level.org.eclipse.angus", "WARN");
+        System.setProperty("logging.level.org.apache.poi", "WARN");
     }
 
     private static String normalise(String level) {
