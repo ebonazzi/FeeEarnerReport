@@ -10,8 +10,42 @@ public class ArchiveRepository {
 
     private final DataSource ds;
 
+    /** All five archive tables, in the order rows are inserted. */
+    private static final List<String> ARCHIVE_TABLES = List.of(
+        "report.full_task_archive",
+        "report.limitation_archive",
+        "report.aged_archive",
+        "report.duplicate_task_archive",
+        "report.high_volume_archive");
+
     public ArchiveRepository(DataSource ds) {
         this.ds = ds;
+    }
+
+    /**
+     * Removes any existing archive rows for one fee earner within a run, across all five
+     * archive tables. Single-spreadsheet regeneration reuses the existing {@code run_id}
+     * (via {@code updateFeeEarnerRun}), so without this the re-insert would collide with
+     * the unique clustered index {@code (day_run, run_id, usrID, row_number)}. Deleting
+     * first (rather than upserting on {@code row_number}) also drops now-stale rows when a
+     * regeneration produces fewer rows than before.
+     */
+    public void deleteForFeeEarner(int runId, LocalDate dayRun, int usrID) {
+        try (var conn = ds.getConnection()) {
+            for (var table : ARCHIVE_TABLES) {
+                var sql = "DELETE FROM " + table +
+                          " WHERE day_run = ? AND run_id = ? AND usrID = ?";
+                try (var stmt = conn.prepareStatement(sql)) {
+                    stmt.setDate(1, Date.valueOf(dayRun));
+                    stmt.setInt(2, runId);
+                    stmt.setInt(3, usrID);
+                    stmt.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                "Archive delete failed for usrID=" + usrID + " run=" + runId, e);
+        }
     }
 
     public void insertFullTaskRows(int runId, LocalDate dayRun, int usrID,

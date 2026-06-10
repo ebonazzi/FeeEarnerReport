@@ -131,6 +131,46 @@ class SpreadsheetServiceTest {
         assertEquals(2, tracker.failures().size());
     }
 
+    /** Single-generate reuses the run_id, so it must clear prior archive rows BEFORE inserting */
+    @Test
+    void singleGenerateDeletesArchiveBeforeInserting(@TempDir Path dir) throws IOException {
+        var ops = new ArrayList<String>();
+        var recordingArchive = new ArchiveRepository(null) {
+            @Override public void deleteForFeeEarner(int r, LocalDate d, int u) { ops.add("delete"); }
+            @Override public void insertFullTaskRows(int r, LocalDate d, int u, List<FullTaskRow> rows) { ops.add("insert"); }
+            @Override public void insertLimitationRows(int r, LocalDate d, int u, List<LimitationRow> rows) { ops.add("insert"); }
+            @Override public void insertAgedRows(int r, LocalDate d, int u, List<AgedRow> rows) { ops.add("insert"); }
+            @Override public void insertDuplicateRows(int r, LocalDate d, int u, List<DuplicateRow> rows) { ops.add("insert"); }
+            @Override public void insertHighVolumeRows(int r, LocalDate d, int u, List<HighVolumeRow> rows) { ops.add("insert"); }
+        };
+        var service = new SpreadsheetService(stubWorksheetRepo(), recordingArchive, stubRunRepo(),
+            stubFeeEarnerRepo(Set.of()), new WorkbookBuilder());
+        service.generateForFeeEarner(LEAD_FE, 1, DAY, configFor(dir), e -> {});
+        assertEquals("delete", ops.get(0), "Single-generate must delete prior archive rows first");
+        assertEquals(1, ops.stream().filter("delete"::equals).count(), "Delete must run exactly once");
+        assertTrue(ops.indexOf("delete") < ops.indexOf("insert"), "Delete must precede any insert");
+    }
+
+    /** Bulk generate gets a fresh run_id, so it must NOT delete archive rows */
+    @Test
+    void bulkGenerateDoesNotDeleteArchive(@TempDir Path dir) throws IOException {
+        var deleteCalled = new AtomicBoolean(false);
+        var recordingArchive = new ArchiveRepository(null) {
+            @Override public void deleteForFeeEarner(int r, LocalDate d, int u) { deleteCalled.set(true); }
+            @Override public void insertFullTaskRows(int r, LocalDate d, int u, List<FullTaskRow> rows) {}
+            @Override public void insertLimitationRows(int r, LocalDate d, int u, List<LimitationRow> rows) {}
+            @Override public void insertAgedRows(int r, LocalDate d, int u, List<AgedRow> rows) {}
+            @Override public void insertDuplicateRows(int r, LocalDate d, int u, List<DuplicateRow> rows) {}
+            @Override public void insertHighVolumeRows(int r, LocalDate d, int u, List<HighVolumeRow> rows) {}
+        };
+        var service = new SpreadsheetService(stubWorksheetRepo(), recordingArchive, stubRunRepo(),
+            stubFeeEarnerRepo(Set.of()), new WorkbookBuilder());
+        var tracker = new ProgressTracker(1);
+        service.generateAll(List.of(LEAD_FE), 1, DAY, configFor(dir), tracker);
+        assertEquals(1, tracker.completed().get());
+        assertFalse(deleteCalled.get(), "Bulk generate (fresh run_id) must not delete archive rows");
+    }
+
     // ── helper stubs ──────────────────────────────────────────────────────────
 
     private WorksheetRepository stubWorksheetRepo() {
@@ -150,6 +190,7 @@ class SpreadsheetServiceTest {
 
     private ArchiveRepository stubArchiveRepo() {
         return new ArchiveRepository(null) {
+            @Override public void deleteForFeeEarner(int r, LocalDate d, int u) {}
             @Override public void insertFullTaskRows(int r, LocalDate d, int u, List<FullTaskRow> rows) {}
             @Override public void insertLimitationRows(int r, LocalDate d, int u, List<LimitationRow> rows) {}
             @Override public void insertAgedRows(int r, LocalDate d, int u, List<AgedRow> rows) {}

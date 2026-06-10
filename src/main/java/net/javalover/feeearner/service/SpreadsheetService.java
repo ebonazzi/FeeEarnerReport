@@ -119,6 +119,13 @@ public class SpreadsheetService {
         Path file = Path.of(config.outputDir()).resolve(filename);
         Files.write(file, xlsx);
         try {
+            // Single-spreadsheet regeneration reuses the existing run_id, so clear this
+            // fee earner's prior archive rows before re-inserting — otherwise they collide
+            // with the unique clustered index (day_run, run_id, usrID, row_number). A fresh
+            // bulk run gets a new run_id, so it has nothing to clear.
+            if (!isNewRun) {
+                archiveRepo.deleteForFeeEarner(runId, dayRun, fe.usrID());
+            }
             archiveRepo.insertFullTaskRows(runId, dayRun, fe.usrID(), fullTask);
             archiveRepo.insertLimitationRows(runId, dayRun, fe.usrID(), limitation);
             archiveRepo.insertAgedRows(runId, dayRun, fe.usrID(), aged);
