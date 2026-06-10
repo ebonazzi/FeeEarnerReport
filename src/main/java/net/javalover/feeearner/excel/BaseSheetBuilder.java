@@ -10,6 +10,9 @@ import java.util.List;
 
 abstract class BaseSheetBuilder<T extends BaseRow> {
 
+    /** Cap column width so a long cell never spans the whole screen (no wrapping, just clipped). */
+    private static final int MAX_COLUMN_WIDTH_CHARS = 70;
+
     abstract List<String> headers();
 
     abstract void writeExtraColumns(XSSFRow row, T data, XSSFCellStyle dateStyle);
@@ -27,8 +30,12 @@ abstract class BaseSheetBuilder<T extends BaseRow> {
             writeBaseColumns(r, data, dateStyle);
             writeExtraColumns(r, data, dateStyle);
         }
+        int maxWidth = MAX_COLUMN_WIDTH_CHARS * 256;   // POI width unit = 1/256th of a character
         for (int i = 0; i <= lastCol; i++) {
             sheet.autoSizeColumn(i);
+            if (sheet.getColumnWidth(i) > maxWidth) {
+                sheet.setColumnWidth(i, maxWidth);
+            }
         }
     }
 
@@ -37,9 +44,14 @@ abstract class BaseSheetBuilder<T extends BaseRow> {
         var hdrs = headers();
         for (int i = 0; i < hdrs.size(); i++) {
             var cell = headerRow.createCell(i);
-            cell.setCellValue(hdrs.get(i));
+            cell.setCellValue(displayHeader(hdrs.get(i)));
             cell.setCellStyle(boldStyle);
         }
+    }
+
+    /** Header names mirror the SQL column names; strip the [] SQL Server quoting for display. */
+    private static String displayHeader(String header) {
+        return header.replace("[", "").replace("]", "");
     }
 
     private XSSFCellStyle createBoldStyle(XSSFWorkbook wb) {
@@ -50,24 +62,25 @@ abstract class BaseSheetBuilder<T extends BaseRow> {
         return style;
     }
 
+    // Report Date is intentionally omitted from the spreadsheet (still archived in the DB).
+    // Base columns are 0..15; subclasses add their extra column at index 16.
     protected void writeBaseColumns(XSSFRow row, BaseRow data, XSSFCellStyle dateStyle) {
         setString(row, 0, data.type());
-        setDate(row, 1, data.reportDate(), dateStyle);
-        setString(row, 2, data.matterNumber());
-        setString(row, 3, data.matterNameDescription());
-        setString(row, 4, data.department());
-        setString(row, 5, data.practiceCode());
-        setString(row, 6, data.officeName());
-        setString(row, 7, data.jurisdiction());
-        setString(row, 8, data.feeEarner());
-        setString(row, 9, data.legalAssistant());
-        setString(row, 10, data.supervisingFeeEarner());
-        setString(row, 11, data.taskDescription());
-        setString(row, 12, data.taskType());
-        setString(row, 13, data.taskNotes());
-        setString(row, 14, data.taskOwner());
-        setDateTime(row, 15, data.taskCreatedDate(), dateStyle);
-        setDateTime(row, 16, data.taskDueDate(), dateStyle);
+        setString(row, 1, data.matterNumber());
+        setString(row, 2, data.matterNameDescription());
+        setString(row, 3, data.department());
+        setString(row, 4, data.practiceCode());
+        setString(row, 5, data.officeName());
+        setString(row, 6, data.jurisdiction());
+        setString(row, 7, data.feeEarner());
+        setString(row, 8, data.legalAssistant());
+        setString(row, 9, data.supervisingFeeEarner());
+        setString(row, 10, data.taskDescription());
+        setString(row, 11, data.taskType());
+        setString(row, 12, data.taskNotes());
+        setString(row, 13, data.taskOwner());
+        setDateTime(row, 14, data.taskCreatedDate(), dateStyle);
+        setDateTime(row, 15, data.taskDueDate(), dateStyle);
     }
 
     protected void setString(XSSFRow row, int col, String value) {

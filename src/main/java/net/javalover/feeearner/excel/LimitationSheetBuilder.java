@@ -9,7 +9,7 @@ import java.util.List;
 class LimitationSheetBuilder extends BaseSheetBuilder<LimitationRow> {
 
     private static final List<String> HEADERS = List.of(
-        "[Type]", "[Report Date]", "[Matter Number]", "[Matter Name/Description]",
+        "[Type]", "[Matter Number]", "[Matter Name/Description]",
         "Department", "[Practice Code]", "[Office Name]", "Jurisdiction",
         "[Fee Earner]", "[Legal Assistant]", "[Supervising Fee Earner]",
         "[Task Description]", "[Task Type]", "[Task Notes]", "[Task Owner]",
@@ -21,6 +21,6 @@ class LimitationSheetBuilder extends BaseSheetBuilder<LimitationRow> {
 
     @Override
     void writeExtraColumns(XSSFRow row, LimitationRow data, XSSFCellStyle dateStyle) {
-        setString(row, 17, data.keyWords());
+        setString(row, 16, data.keyWords());
     }
 }

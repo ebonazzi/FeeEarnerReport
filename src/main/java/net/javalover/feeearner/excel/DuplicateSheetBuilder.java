@@ -9,7 +9,7 @@ import java.util.List;
 class DuplicateSheetBuilder extends BaseSheetBuilder<DuplicateRow> {
 
     private static final List<String> HEADERS = List.of(
-        "[Type]", "[Report Date]", "[Matter Number]", "[Matter Name/Description]",
+        "[Type]", "[Matter Number]", "[Matter Name/Description]",
         "Department", "[Practice Code]", "[Office Name]", "Jurisdiction",
         "[Fee Earner]", "[Legal Assistant]", "[Supervising Fee Earner]",
         "[Task Description]", "[Task Type]", "[Task Notes]", "[Task Owner]",
@@ -21,6 +21,6 @@ class DuplicateSheetBuilder extends BaseSheetBuilder<DuplicateRow> {
 
     @Override
     void writeExtraColumns(XSSFRow row, DuplicateRow data, XSSFCellStyle dateStyle) {
-        setString(row, 17, data.duplicate());
+        setString(row, 16, data.duplicate());
     }
 }

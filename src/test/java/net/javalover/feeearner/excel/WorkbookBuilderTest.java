@@ -5,6 +5,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -46,6 +47,49 @@ class WorkbookBuilderTest {
             assertTrue(info.isFreezePane());
             assertEquals(1, info.getHorizontalSplitTopRow());
         }
+    }
+
+    @Test
+    void reportDateColumnIsDropped() throws IOException {
+        var bytes = new WorkbookBuilder().build(List.of(), List.of(), List.of(), List.of(), List.of());
+        try (var wb = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+            var names = headerNames(wb.getSheetAt(0));
+            assertFalse(names.contains("Report Date"), "Report Date column must be dropped from the spreadsheet");
+            assertEquals("Type", names.get(0));
+            assertEquals("Matter Number", names.get(1), "Matter Number now immediately follows Type");
+        }
+    }
+
+    @Test
+    void headersHaveNoSquareBrackets() throws IOException {
+        var bytes = new WorkbookBuilder().build(List.of(), List.of(), List.of(), List.of(), List.of());
+        try (var wb = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+            for (int s = 0; s < wb.getNumberOfSheets(); s++) {
+                for (var name : headerNames(wb.getSheetAt(s))) {
+                    assertFalse(name.contains("[") || name.contains("]"),
+                        "Header '" + name + "' must not contain square brackets");
+                }
+            }
+        }
+    }
+
+    @Test
+    void longColumnWidthIsCappedAt70Chars() throws IOException {
+        var longText = "x".repeat(200);
+        var row = new FullTaskRow("Lead", null, "M1", longText, "Dept", "PC",
+                "Office", "Jur", "FE", "LA", "SFE", "TaskD", "TaskT", "Notes", "Owner", null, null);
+        var bytes = new WorkbookBuilder().build(List.of(row), List.of(), List.of(), List.of(), List.of());
+        try (var wb = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+            // Matter Name/Description is column index 2 (Type=0, Matter Number=1)
+            assertEquals(70 * 256, wb.getSheetAt(0).getColumnWidth(2),
+                "A long column must be capped at 70 characters wide");
+        }
+    }
+
+    private static List<String> headerNames(org.apache.poi.ss.usermodel.Sheet sheet) {
+        var names = new ArrayList<String>();
+        sheet.getRow(0).forEach(c -> names.add(c.getStringCellValue()));
+        return names;
     }
 
     @Test

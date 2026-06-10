@@ -9,7 +9,7 @@ import java.util.List;
 class AgedSheetBuilder extends BaseSheetBuilder<AgedRow> {
 
     private static final List<String> HEADERS = List.of(
-        "[Type]", "[Report Date]", "[Matter Number]", "[Matter Name/Description]",
+        "[Type]", "[Matter Number]", "[Matter Name/Description]",
         "Department", "[Practice Code]", "[Office Name]", "Jurisdiction",
         "[Fee Earner]", "[Legal Assistant]", "[Supervising Fee Earner]",
         "[Task Description]", "[Task Type]", "[Task Notes]", "[Task Owner]",
@@ -21,6 +21,6 @@ class AgedSheetBuilder extends BaseSheetBuilder<AgedRow> {
 
     @Override
     void writeExtraColumns(XSSFRow row, AgedRow data, XSSFCellStyle dateStyle) {
-        // No extra columns beyond base 17
+        // No extra columns beyond base 16
     }
 }

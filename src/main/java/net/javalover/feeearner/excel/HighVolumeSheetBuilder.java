@@ -9,7 +9,7 @@ import java.util.List;
 class HighVolumeSheetBuilder extends BaseSheetBuilder<HighVolumeRow> {
 
     private static final List<String> HEADERS = List.of(
-        "[Type]", "[Report Date]", "[Matter Number]", "[Matter Name/Description]",
+        "[Type]", "[Matter Number]", "[Matter Name/Description]",
         "Department", "[Practice Code]", "[Office Name]", "Jurisdiction",
         "[Fee Earner]", "[Legal Assistant]", "[Supervising Fee Earner]",
         "[Task Description]", "[Task Type]", "[Task Notes]", "[Task Owner]",
@@ -21,6 +21,6 @@ class HighVolumeSheetBuilder extends BaseSheetBuilder<HighVolumeRow> {
 
     @Override
     void writeExtraColumns(XSSFRow row, HighVolumeRow data, XSSFCellStyle dateStyle) {
-        row.createCell(17).setCellValue(data.matterRowCount());
+        row.createCell(16).setCellValue(data.matterRowCount());
     }
 }
