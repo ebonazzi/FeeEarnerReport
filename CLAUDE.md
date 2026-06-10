@@ -60,3 +60,7 @@ Logging is SLF4J → Rainbow Gum, wired entirely through `pom.xml` service bindi
 ## Database schema & SQL scripts
 
 `src/main/resources/sql/` (numbered, run in order): `01_tables.sql`, `02_partition_functions.sql`, `03_partition_schemes.sql`, `04_apply_partitioning.sql`, `05_widen_type_column.sql`. The 5 archive tables are weekly-partitioned by `day_run`. `99_truncate_data.sql` resets generated data while preserving `report_param`. These are DDL the app depends on but does not run itself — apply them to the DB out of band.
+
+## Repo conventions
+
+The `.idea/` directory is **tracked** in this repo (e.g. `.idea/misc.xml`, `.idea/codeStyles/`) — shared IntelliJ project settings are committed intentionally, not git-ignored. When changing project/run/code-style settings, expect `.idea/` files to show up in `git status` and commit them deliberately rather than discarding them.
