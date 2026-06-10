@@ -6,9 +6,12 @@ import net.javalover.feeearner.model.*;
 import net.javalover.feeearner.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -20,17 +23,20 @@ public class SpreadsheetService {
     private static final Logger log = LoggerFactory.getLogger(SpreadsheetService.class);
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
+    private final DataSource ds;
     private final WorksheetRepository worksheetRepo;
     private final ArchiveRepository archiveRepo;
     private final RunRepository runRepo;
     private final FeeEarnerRepository feeEarnerRepo;
     private final WorkbookBuilder workbookBuilder;
 
-    public SpreadsheetService(WorksheetRepository worksheetRepo,
+    public SpreadsheetService(DataSource ds,
+                              WorksheetRepository worksheetRepo,
                               ArchiveRepository archiveRepo,
                               RunRepository runRepo,
                               FeeEarnerRepository feeEarnerRepo,
                               WorkbookBuilder workbookBuilder) {
+        this.ds = ds;
         this.worksheetRepo = worksheetRepo;
         this.archiveRepo = archiveRepo;
         this.runRepo = runRepo;
@@ -119,23 +125,51 @@ public class SpreadsheetService {
         Path file = Path.of(config.outputDir()).resolve(filename);
         Files.write(file, xlsx);
         try {
-            // Write all five archive tables atomically. Single-spreadsheet regeneration
-            // (isNewRun=false) reuses the existing run_id, so prior rows are replaced
-            // within the same transaction to avoid colliding with the unique clustered
-            // index (day_run, run_id, usrID, row_number); a fresh bulk run does not.
-            archiveRepo.writeForFeeEarner(runId, dayRun, fe.usrID(), !isNewRun,
-                fullTask, limitation, aged, duplicate, highVolume);
-
             byte[] stored = Files.readAllBytes(file);
-            if (isNewRun) {
-                runRepo.insertFeeEarnerRun(
-                    new FeeEarnerRun(runId, dayRun, fe.usrID(), fe.feeEarner(),
-                                     fe.usrEmail(), filename, stored, null));
-            } else {
-                runRepo.updateFeeEarnerRun(runId, fe.usrID(), filename, stored);
-            }
+            persist(fe, runId, dayRun, isNewRun, filename, stored,
+                fullTask, limitation, aged, duplicate, highVolume);
         } finally {
             Files.delete(file);
+        }
+    }
+
+    /**
+     * Persists one fee earner's archive rows and stored spreadsheet in a single transaction
+     * so they commit together — a mid-write failure rolls back everything, leaving no
+     * partial archive and no mismatch between the archive and the stored blob.
+     *
+     * <p>Single-spreadsheet regeneration ({@code isNewRun=false}) reuses the existing
+     * {@code run_id}, so it passes {@code replaceExisting=true} to clear prior archive rows
+     * (within this transaction) before re-insert; a fresh bulk run passes {@code false}.
+     */
+    private void persist(FeeEarner fe, int runId, LocalDate dayRun, boolean isNewRun,
+                         String filename, byte[] stored,
+                         List<FullTaskRow> fullTask, List<LimitationRow> limitation,
+                         List<AgedRow> aged, List<DuplicateRow> duplicate,
+                         List<HighVolumeRow> highVolume) {
+        try (Connection conn = ds.getConnection()) {
+            boolean prevAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                archiveRepo.writeForFeeEarner(conn, runId, dayRun, fe.usrID(), !isNewRun,
+                    fullTask, limitation, aged, duplicate, highVolume);
+                if (isNewRun) {
+                    runRepo.insertFeeEarnerRun(conn,
+                        new FeeEarnerRun(runId, dayRun, fe.usrID(), fe.feeEarner(),
+                                         fe.usrEmail(), filename, stored, null));
+                } else {
+                    runRepo.updateFeeEarnerRun(conn, runId, fe.usrID(), filename, stored);
+                }
+                conn.commit();
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(prevAutoCommit);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                "Failed to persist run for usrID=" + fe.usrID() + " run=" + runId, e);
         }
     }
 }

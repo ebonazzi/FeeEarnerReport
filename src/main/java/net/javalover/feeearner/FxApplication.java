@@ -54,12 +54,12 @@ public class FxApplication extends Application
 
             var feeEarnerRepo = new FeeEarnerRepository(ds);
             var worksheetRepo = new WorksheetRepository(ds);
-            var archiveRepo = new ArchiveRepository(ds);
+            var archiveRepo = new ArchiveRepository();
             var runRepo = new RunRepository(ds);
 
             var runSvc = new RunService(runRepo);
             var spreadsheetSvc = new SpreadsheetService(
-                    worksheetRepo, archiveRepo, runRepo, feeEarnerRepo, new WorkbookBuilder());
+                    ds, worksheetRepo, archiveRepo, runRepo, feeEarnerRepo, new WorkbookBuilder());
             var mailSender = new MailSender(config);
             var emailSvc = new EmailService(mailSender, runRepo);
             var paramSvc = new ParameterService(paramRepo);

@@ -53,10 +53,10 @@ public class Main
             var feeEarnerRepo = new FeeEarnerRepository(ds);
             var runRepo = new RunRepository(ds);
             var worksheetRepo = new WorksheetRepository(ds);
-            var archiveRepo = new ArchiveRepository(ds);
+            var archiveRepo = new ArchiveRepository();
 
             var spreadsheetSvc = new SpreadsheetService(
-                    worksheetRepo, archiveRepo, runRepo, feeEarnerRepo, new WorkbookBuilder());
+                    ds, worksheetRepo, archiveRepo, runRepo, feeEarnerRepo, new WorkbookBuilder());
             var runSvc = new RunService(runRepo);
 
             var leadFEs = feeEarnerRepo.getLeadFeeEarners();

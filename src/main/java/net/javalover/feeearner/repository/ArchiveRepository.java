@@ -1,14 +1,11 @@
 package net.javalover.feeearner.repository;
 
 import net.javalover.feeearner.model.*;
-import javax.sql.DataSource;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.List;
 
 public class ArchiveRepository {
-
-    private final DataSource ds;
 
     /** All five archive tables, in the order rows are inserted. */
     private static final List<String> ARCHIVE_TABLES = List.of(
@@ -18,56 +15,34 @@ public class ArchiveRepository {
         "report.duplicate_task_archive",
         "report.high_volume_archive");
 
-    public ArchiveRepository(DataSource ds) {
-        this.ds = ds;
-    }
-
     /**
-     * Writes one fee earner's archive rows for a run across all five tables in a single
-     * transaction — all five tables commit together or none do, so a mid-write failure
-     * can never leave the fee earner with a partial archive.
+     * Writes one fee earner's archive rows across all five tables, on the caller's
+     * connection. This is a transaction <em>participant</em>: it never commits, rolls
+     * back, or closes {@code conn} — {@code SpreadsheetService} owns the transaction so
+     * the archive rows and the {@code FeeEarnersRun} blob commit together (all-or-nothing).
      *
      * <p>When {@code replaceExisting} is true (single-spreadsheet regeneration, which
      * reuses the existing {@code run_id} via {@code updateFeeEarnerRun}), prior rows for
-     * this {@code (day_run, run_id, usrID)} are deleted first — within the same
-     * transaction — so the re-insert doesn't collide with the unique clustered index
-     * {@code (day_run, run_id, usrID, row_number)}. Deleting (rather than upserting on
-     * {@code row_number}) also drops now-stale rows when a regeneration yields fewer rows.
-     * A fresh bulk run gets a new {@code run_id} and passes {@code false}.
+     * this {@code (day_run, run_id, usrID)} are deleted first so the re-insert doesn't
+     * collide with the unique clustered index {@code (day_run, run_id, usrID, row_number)}.
+     * Deleting (rather than upserting on {@code row_number}) also drops now-stale rows when
+     * a regeneration yields fewer rows. A fresh bulk run gets a new {@code run_id} and
+     * passes {@code false}.
      */
-    public void writeForFeeEarner(int runId, LocalDate dayRun, int usrID,
+    public void writeForFeeEarner(Connection conn, int runId, LocalDate dayRun, int usrID,
                                   boolean replaceExisting,
                                   List<FullTaskRow> fullTask,
                                   List<LimitationRow> limitation,
                                   List<AgedRow> aged,
                                   List<DuplicateRow> duplicate,
-                                  List<HighVolumeRow> highVolume) {
-        Connection conn = null;
-        try {
-            conn = ds.getConnection();
-            conn.setAutoCommit(false);
-            try {
-                if (replaceExisting)
-                    deleteForFeeEarner(conn, runId, dayRun, usrID);
-                insertFullTaskRows(conn, runId, dayRun, usrID, fullTask);
-                insertLimitationRows(conn, runId, dayRun, usrID, limitation);
-                insertAgedRows(conn, runId, dayRun, usrID, aged);
-                insertDuplicateRows(conn, runId, dayRun, usrID, duplicate);
-                insertHighVolumeRows(conn, runId, dayRun, usrID, highVolume);
-                conn.commit();
-            } catch (SQLException | RuntimeException e) {
-                conn.rollback();
-                throw e;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(
-                "Archive write failed for usrID=" + usrID + " run=" + runId, e);
-        } finally {
-            if (conn != null) {
-                try { conn.setAutoCommit(true); conn.close(); }
-                catch (SQLException ignored) { /* best-effort cleanup */ }
-            }
-        }
+                                  List<HighVolumeRow> highVolume) throws SQLException {
+        if (replaceExisting)
+            deleteForFeeEarner(conn, runId, dayRun, usrID);
+        insertFullTaskRows(conn, runId, dayRun, usrID, fullTask);
+        insertLimitationRows(conn, runId, dayRun, usrID, limitation);
+        insertAgedRows(conn, runId, dayRun, usrID, aged);
+        insertDuplicateRows(conn, runId, dayRun, usrID, duplicate);
+        insertHighVolumeRows(conn, runId, dayRun, usrID, highVolume);
     }
 
     private void deleteForFeeEarner(Connection conn, int runId, LocalDate dayRun, int usrID)

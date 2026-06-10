@@ -41,13 +41,17 @@ public class RunRepository {
         }
     }
 
-    public void insertFeeEarnerRun(FeeEarnerRun run) {
+    /**
+     * Inserts the stored spreadsheet row on the caller's connection — a transaction
+     * participant (does not commit/close), so it commits together with the archive rows
+     * written for the same fee earner. See {@code SpreadsheetService.doGenerate}.
+     */
+    public void insertFeeEarnerRun(Connection conn, FeeEarnerRun run) throws SQLException {
         var sql = "INSERT INTO report.FeeEarnersRun " +
                   "(run_id, day_run, usrID, [Fee Earner], usrEmail, " +
                   " excel_filename, excel_spreadsheet, stored_at) " +
                   "VALUES (?,?,?,?,?,?,?,GETDATE())";
-        try (var conn = ds.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
+        try (var stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, run.runId());
             stmt.setDate(2, Date.valueOf(run.dayRun()));
             stmt.setInt(3, run.usrID());
@@ -59,24 +63,21 @@ public class RunRepository {
             else
                 stmt.setNull(7, Types.VARBINARY);
             stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to insert FeeEarnerRun for usrID=" + run.usrID(), e);
         }
     }
 
-    public void updateFeeEarnerRun(int runId, int usrID, String filename, byte[] xlsx) {
+    /** Updates the stored spreadsheet row on the caller's connection (transaction participant). */
+    public void updateFeeEarnerRun(Connection conn, int runId, int usrID,
+                                   String filename, byte[] xlsx) throws SQLException {
         var sql = "UPDATE report.FeeEarnersRun " +
                   "SET excel_filename=?, excel_spreadsheet=?, stored_at=GETDATE() " +
                   "WHERE run_id=? AND usrID=?";
-        try (var conn = ds.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
+        try (var stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, filename);
             stmt.setBytes(2, xlsx);
             stmt.setInt(3, runId);
             stmt.setInt(4, usrID);
             stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to update FeeEarnerRun for usrID=" + usrID, e);
         }
     }
 
