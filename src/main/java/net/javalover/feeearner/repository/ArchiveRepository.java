@@ -23,33 +23,69 @@ public class ArchiveRepository {
     }
 
     /**
-     * Removes any existing archive rows for one fee earner within a run, across all five
-     * archive tables. Single-spreadsheet regeneration reuses the existing {@code run_id}
-     * (via {@code updateFeeEarnerRun}), so without this the re-insert would collide with
-     * the unique clustered index {@code (day_run, run_id, usrID, row_number)}. Deleting
-     * first (rather than upserting on {@code row_number}) also drops now-stale rows when a
-     * regeneration produces fewer rows than before.
+     * Writes one fee earner's archive rows for a run across all five tables in a single
+     * transaction — all five tables commit together or none do, so a mid-write failure
+     * can never leave the fee earner with a partial archive.
+     *
+     * <p>When {@code replaceExisting} is true (single-spreadsheet regeneration, which
+     * reuses the existing {@code run_id} via {@code updateFeeEarnerRun}), prior rows for
+     * this {@code (day_run, run_id, usrID)} are deleted first — within the same
+     * transaction — so the re-insert doesn't collide with the unique clustered index
+     * {@code (day_run, run_id, usrID, row_number)}. Deleting (rather than upserting on
+     * {@code row_number}) also drops now-stale rows when a regeneration yields fewer rows.
+     * A fresh bulk run gets a new {@code run_id} and passes {@code false}.
      */
-    public void deleteForFeeEarner(int runId, LocalDate dayRun, int usrID) {
-        try (var conn = ds.getConnection()) {
-            for (var table : ARCHIVE_TABLES) {
-                var sql = "DELETE FROM " + table +
-                          " WHERE day_run = ? AND run_id = ? AND usrID = ?";
-                try (var stmt = conn.prepareStatement(sql)) {
-                    stmt.setDate(1, Date.valueOf(dayRun));
-                    stmt.setInt(2, runId);
-                    stmt.setInt(3, usrID);
-                    stmt.executeUpdate();
-                }
+    public void writeForFeeEarner(int runId, LocalDate dayRun, int usrID,
+                                  boolean replaceExisting,
+                                  List<FullTaskRow> fullTask,
+                                  List<LimitationRow> limitation,
+                                  List<AgedRow> aged,
+                                  List<DuplicateRow> duplicate,
+                                  List<HighVolumeRow> highVolume) {
+        Connection conn = null;
+        try {
+            conn = ds.getConnection();
+            conn.setAutoCommit(false);
+            try {
+                if (replaceExisting)
+                    deleteForFeeEarner(conn, runId, dayRun, usrID);
+                insertFullTaskRows(conn, runId, dayRun, usrID, fullTask);
+                insertLimitationRows(conn, runId, dayRun, usrID, limitation);
+                insertAgedRows(conn, runId, dayRun, usrID, aged);
+                insertDuplicateRows(conn, runId, dayRun, usrID, duplicate);
+                insertHighVolumeRows(conn, runId, dayRun, usrID, highVolume);
+                conn.commit();
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
             }
         } catch (SQLException e) {
             throw new RuntimeException(
-                "Archive delete failed for usrID=" + usrID + " run=" + runId, e);
+                "Archive write failed for usrID=" + usrID + " run=" + runId, e);
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); }
+                catch (SQLException ignored) { /* best-effort cleanup */ }
+            }
         }
     }
 
-    public void insertFullTaskRows(int runId, LocalDate dayRun, int usrID,
-                                   List<FullTaskRow> rows) {
+    private void deleteForFeeEarner(Connection conn, int runId, LocalDate dayRun, int usrID)
+            throws SQLException {
+        for (var table : ARCHIVE_TABLES) {
+            var sql = "DELETE FROM " + table +
+                      " WHERE day_run = ? AND run_id = ? AND usrID = ?";
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setDate(1, Date.valueOf(dayRun));
+                stmt.setInt(2, runId);
+                stmt.setInt(3, usrID);
+                stmt.executeUpdate();
+            }
+        }
+    }
+
+    private void insertFullTaskRows(Connection conn, int runId, LocalDate dayRun, int usrID,
+                                    List<FullTaskRow> rows) throws SQLException {
         var sql = "INSERT INTO report.full_task_archive " +
                   "(day_run,run_id,usrID,row_number,[Report Date],[Matter Number]," +
                   "[Matter Name/Description],Department,[Practice Code],[Office Name]," +
@@ -57,7 +93,7 @@ public class ArchiveRepository {
                   "[Task Description],[Task Type],[Task Notes],[Task Owner]," +
                   "[Task Created Date],[Task Due Date],[Task Complete],[Type]) " +
                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?)";
-        batchInsert(sql, runId, dayRun, usrID, rows, (stmt, row, rowNum) -> {
+        batchInsert(conn, sql, runId, dayRun, usrID, rows, (stmt, row, rowNum) -> {
             stmt.setDate(1, Date.valueOf(dayRun));
             stmt.setInt(2, runId);
             stmt.setInt(3, usrID);
@@ -66,8 +102,8 @@ public class ArchiveRepository {
         });
     }
 
-    public void insertLimitationRows(int runId, LocalDate dayRun, int usrID,
-                                     List<LimitationRow> rows) {
+    private void insertLimitationRows(Connection conn, int runId, LocalDate dayRun, int usrID,
+                                      List<LimitationRow> rows) throws SQLException {
         var sql = "INSERT INTO report.limitation_archive " +
                   "(day_run,run_id,usrID,row_number,[Report Date],[Matter Number]," +
                   "[Matter Name/Description],Department,[Practice Code],[Office Name]," +
@@ -75,7 +111,7 @@ public class ArchiveRepository {
                   "[Task Description],[Task Type],[Task Notes],[Task Owner]," +
                   "[Task Created Date],[Task Due Date],[Type],[Key Words]) " +
                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-        batchInsert(sql, runId, dayRun, usrID, rows, (stmt, row, rowNum) -> {
+        batchInsert(conn, sql, runId, dayRun, usrID, rows, (stmt, row, rowNum) -> {
             stmt.setDate(1, Date.valueOf(dayRun));
             stmt.setInt(2, runId);
             stmt.setInt(3, usrID);
@@ -85,8 +121,8 @@ public class ArchiveRepository {
         });
     }
 
-    public void insertAgedRows(int runId, LocalDate dayRun, int usrID,
-                               List<AgedRow> rows) {
+    private void insertAgedRows(Connection conn, int runId, LocalDate dayRun, int usrID,
+                                List<AgedRow> rows) throws SQLException {
         var sql = "INSERT INTO report.aged_archive " +
                   "(day_run,run_id,usrID,row_number,[Report Date],[Matter Number]," +
                   "[Matter Name/Description],Department,[Practice Code],[Office Name]," +
@@ -94,7 +130,7 @@ public class ArchiveRepository {
                   "[Task Description],[Task Type],[Task Notes],[Task Owner]," +
                   "[Task Created Date],[Task Due Date],[Type]) " +
                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-        batchInsert(sql, runId, dayRun, usrID, rows, (stmt, row, rowNum) -> {
+        batchInsert(conn, sql, runId, dayRun, usrID, rows, (stmt, row, rowNum) -> {
             stmt.setDate(1, Date.valueOf(dayRun));
             stmt.setInt(2, runId);
             stmt.setInt(3, usrID);
@@ -103,8 +139,8 @@ public class ArchiveRepository {
         });
     }
 
-    public void insertDuplicateRows(int runId, LocalDate dayRun, int usrID,
-                                    List<DuplicateRow> rows) {
+    private void insertDuplicateRows(Connection conn, int runId, LocalDate dayRun, int usrID,
+                                     List<DuplicateRow> rows) throws SQLException {
         var sql = "INSERT INTO report.duplicate_task_archive " +
                   "(day_run,run_id,usrID,row_number,[Report Date],[Matter Number]," +
                   "[Matter Name/Description],Department,[Practice Code],[Office Name]," +
@@ -112,7 +148,7 @@ public class ArchiveRepository {
                   "[Task Description],[Task Type],[Task Notes],[Task Owner]," +
                   "[Task Created Date],[Task Due Date],[Type],[Duplicate]) " +
                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-        batchInsert(sql, runId, dayRun, usrID, rows, (stmt, row, rowNum) -> {
+        batchInsert(conn, sql, runId, dayRun, usrID, rows, (stmt, row, rowNum) -> {
             stmt.setDate(1, Date.valueOf(dayRun));
             stmt.setInt(2, runId);
             stmt.setInt(3, usrID);
@@ -122,8 +158,8 @@ public class ArchiveRepository {
         });
     }
 
-    public void insertHighVolumeRows(int runId, LocalDate dayRun, int usrID,
-                                     List<HighVolumeRow> rows) {
+    private void insertHighVolumeRows(Connection conn, int runId, LocalDate dayRun, int usrID,
+                                      List<HighVolumeRow> rows) throws SQLException {
         var sql = "INSERT INTO report.high_volume_archive " +
                   "(day_run,run_id,usrID,row_number,[Report Date],[Matter Number]," +
                   "[Matter Name/Description],Department,[Practice Code],[Office Name]," +
@@ -131,7 +167,7 @@ public class ArchiveRepository {
                   "[Task Description],[Task Type],[Task Notes],[Task Owner]," +
                   "[Task Created Date],[Task Due Date],[Type],[Matter Row Count]) " +
                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-        batchInsert(sql, runId, dayRun, usrID, rows, (stmt, row, rowNum) -> {
+        batchInsert(conn, sql, runId, dayRun, usrID, rows, (stmt, row, rowNum) -> {
             stmt.setDate(1, Date.valueOf(dayRun));
             stmt.setInt(2, runId);
             stmt.setInt(3, usrID);
@@ -146,20 +182,18 @@ public class ArchiveRepository {
         void bind(PreparedStatement stmt, T row, int rowNum) throws SQLException;
     }
 
+    /** Batch-inserts on the caller's connection — does not open, commit, or close it. */
     private <T extends BaseRow> void batchInsert(
-            String sql, int runId, LocalDate dayRun, int usrID,
-            List<T> rows, RowBinder<T> binder) {
+            Connection conn, String sql, int runId, LocalDate dayRun, int usrID,
+            List<T> rows, RowBinder<T> binder) throws SQLException {
         if (rows == null || rows.isEmpty()) return;
-        try (var conn = ds.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
+        try (var stmt = conn.prepareStatement(sql)) {
             int rowNum = 1;
             for (var row : rows) {
                 binder.bind(stmt, row, rowNum++);
                 stmt.addBatch();
             }
             stmt.executeBatch();
-        } catch (SQLException e) {
-            throw new RuntimeException("Archive batch insert failed", e);
         }
     }
 
