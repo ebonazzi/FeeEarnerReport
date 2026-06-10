@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.release>22</maven.compiler.release>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javafx.version>22.0.2</javafx.version>
         <poi.version>5.3.0</poi.version>
@@ -117,7 +117,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.0</version>
                 <configuration>
-                    <release>22</release>
+                    <release>25</release>
                 </configuration>
             </plugin>
 
