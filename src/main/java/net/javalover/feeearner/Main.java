@@ -22,16 +22,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Main {
+public class Main
+{
 
-    public static void main(String[] args) {
-        if (args.length < 1) {
+    public static void main(String[] args)
+    {
+        if (args.length < 1)
+        {
             System.err.println("Usage: fee-earner-report <credentials-file>");
             System.exit(1);
         }
 
         HikariDataSource ds = null;
-        try {
+        try
+        {
             var creds = CredentialLoader.load(args[0]);
             var hikari = new HikariConfig();
             hikari.setJdbcUrl(creds.jdbcUrl());
@@ -49,7 +53,7 @@ public class Main {
             var archiveRepo = new ArchiveRepository(ds);
 
             var spreadsheetSvc = new SpreadsheetService(
-                worksheetRepo, archiveRepo, runRepo, feeEarnerRepo, new WorkbookBuilder());
+                    worksheetRepo, archiveRepo, runRepo, feeEarnerRepo, new WorkbookBuilder());
             var runSvc = new RunService(runRepo);
 
             var leadFEs = feeEarnerRepo.getLeadFeeEarners();
@@ -63,29 +67,38 @@ public class Main {
             runSvc.finishRun(runId);
 
             System.out.printf("Done. Completed: %d  Failed: %d%n",
-                tracker.completed().get(), tracker.failed().get());
-            for (FailedEntry f : tracker.failures()) {
+                    tracker.completed().get(), tracker.failed().get());
+            for (FailedEntry f : tracker.failures())
+            {
                 System.err.printf("  FAILED usrID=%d name='%s': %s%n",
-                    f.usrID(), f.feeEarner(), f.errorMessage());
+                        f.usrID(), f.feeEarner(), f.errorMessage());
             }
             System.exit(tracker.failed().get() > 0 ? 2 : 0);
 
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             System.err.println("Bootstrap failed: " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);
-        } finally {
-            if (ds != null) ds.close();
+        }
+        finally
+        {
+            if (ds != null)
+            {
+                ds.close();
+            }
         }
     }
 
     // Keep lead entry for intersect usrIDs (they appear in both lists)
-    private static List<FeeEarner> merge(List<FeeEarner> lead, List<FeeEarner> matter) {
+    private static List<FeeEarner> merge(List<FeeEarner> lead, List<FeeEarner> matter)
+    {
         var result = new ArrayList<>(lead);
         var leadIds = lead.stream().map(FeeEarner::usrID).collect(Collectors.toSet());
         matter.stream()
-            .filter(fe -> !leadIds.contains(fe.usrID()))
-            .forEach(result::add);
+                .filter(fe -> !leadIds.contains(fe.usrID()))
+                .forEach(result::add);
         return result;
     }
 }
