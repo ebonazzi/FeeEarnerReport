@@ -1,13 +1,20 @@
 package net.javalover.feeearner.repository;
 
+import net.javalover.feeearner.config.DbCredentials;
 import net.javalover.feeearner.model.AppParam;
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ParamRepository {
+
+    private static final String LOAD_ALL_SQL =
+            "SELECT param_id, parameter_name, parameter_value, active " +
+            "FROM MCMBLIVE.report.report_param WHERE active = 1";
 
     private final DataSource ds;
 
@@ -16,16 +23,34 @@ public class ParamRepository {
     }
 
     public List<AppParam> loadAll() {
-        var sql = "SELECT param_id, parameter_name, parameter_value, active " +
-                  "FROM MCMBLIVE.report.report_param WHERE active = 1";
-        try (var conn = ds.getConnection();
-             var stmt = conn.prepareStatement(sql);
+        try (var conn = ds.getConnection()) {
+            return loadAll(conn);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load parameters", e);
+        }
+    }
+
+    /**
+     * Loads parameters over a one-shot {@link DriverManager} connection — used during
+     * bootstrap, before the HikariCP pool exists. This deliberately avoids HikariCP
+     * (which logs via SLF4J on construction); logging must be configured from these
+     * params <em>before</em> anything triggers Rainbow Gum's lazy initialisation.
+     */
+    public static List<AppParam> loadAllBootstrap(DbCredentials creds) {
+        try (var conn = DriverManager.getConnection(
+                creds.jdbcUrl(), creds.username(), creds.password())) {
+            return loadAll(conn);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load parameters (bootstrap)", e);
+        }
+    }
+
+    private static List<AppParam> loadAll(Connection conn) throws SQLException {
+        try (var stmt = conn.prepareStatement(LOAD_ALL_SQL);
              var rs   = stmt.executeQuery()) {
             var list = new ArrayList<AppParam>();
             while (rs.next()) list.add(mapParam(rs));
             return list;
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to load parameters", e);
         }
     }
 
@@ -44,7 +69,7 @@ public class ParamRepository {
         }
     }
 
-    private AppParam mapParam(ResultSet rs) throws SQLException {
+    private static AppParam mapParam(ResultSet rs) throws SQLException {
         return new AppParam(
             rs.getInt("param_id"),
             rs.getString("parameter_name"),

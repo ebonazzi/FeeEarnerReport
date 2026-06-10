@@ -37,6 +37,12 @@ public class FxApplication extends Application
         {
             var creds = CredentialLoader.load(rawArgs.get(0));
 
+            // Load params and configure logging BEFORE building the HikariCP pool —
+            // HikariCP logs via SLF4J on construction, which would trigger Rainbow Gum's
+            // lazy init before the logging system properties are set.
+            var config = AppConfig.from(ParamRepository.loadAllBootstrap(creds));
+            LoggingInitialiser.init(config.logDir(), config.debugLevel());
+
             var hikariCfg = new HikariConfig();
             hikariCfg.setJdbcUrl(creds.jdbcUrl());
             hikariCfg.setUsername(creds.username());
@@ -45,9 +51,6 @@ public class FxApplication extends Application
             ds = new HikariDataSource(hikariCfg);
 
             var paramRepo = new ParamRepository(ds);
-            var config = AppConfig.from(paramRepo.loadAll());
-
-            LoggingInitialiser.init(config.logDir(), config.debugLevel());
 
             var feeEarnerRepo = new FeeEarnerRepository(ds);
             var worksheetRepo = new WorksheetRepository(ds);

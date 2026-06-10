@@ -37,15 +37,18 @@ public class Main
         try
         {
             var creds = CredentialLoader.load(args[0]);
+
+            // Load params and configure logging BEFORE building the HikariCP pool —
+            // HikariCP logs via SLF4J on construction, which would trigger Rainbow Gum's
+            // lazy init before the logging system properties are set.
+            var config = AppConfig.from(ParamRepository.loadAllBootstrap(creds));
+            LoggingInitialiser.init(config.logDir(), config.debugLevel());
+
             var hikari = new HikariConfig();
             hikari.setJdbcUrl(creds.jdbcUrl());
             hikari.setUsername(creds.username());
             hikari.setPassword(creds.password());
             ds = new HikariDataSource(hikari);
-
-            var paramRepo = new ParamRepository(ds);
-            var config = AppConfig.from(paramRepo.loadAll());
-            LoggingInitialiser.init(config.logDir(), config.debugLevel());
 
             var feeEarnerRepo = new FeeEarnerRepository(ds);
             var runRepo = new RunRepository(ds);
