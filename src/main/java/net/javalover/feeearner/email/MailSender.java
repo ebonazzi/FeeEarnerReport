@@ -18,8 +18,6 @@ public class MailSender {
 
     public void send(FeeEarnerRun run) throws MessagingException {
         if (run == null) throw new IllegalArgumentException("run must not be null");
-        if (run.usrEmail() == null || run.usrEmail().isBlank())
-            throw new IllegalArgumentException("run.usrEmail() must not be blank for usrID=" + run.usrID());
         var props = new Properties();
         props.put("mail.smtp.host", config.smtpServer());
         props.put("mail.smtp.port", String.valueOf(config.smtpPort()));
@@ -33,16 +31,24 @@ public class MailSender {
             throws MessagingException {
         var msg = new MimeMessage(session);
         msg.setFrom(new InternetAddress(config.emailSender()));
-        msg.addRecipient(Message.RecipientType.TO, new InternetAddress(run.usrEmail()));
 
+        // Spreadsheets go ONLY to the configured email_recipients list; the fee earner
+        // is never emailed. A blank list is an error (we do not send a recipient-less message).
+        int added = 0;
         var recipients = config.emailRecipients();
         if (!recipients.isBlank()) {
             for (var addr : recipients.split("\\|")) {
                 var trimmed = addr.trim();
                 if (!trimmed.isEmpty()) {
-                    msg.addRecipient(Message.RecipientType.CC, new InternetAddress(trimmed));
+                    msg.addRecipient(Message.RecipientType.TO, new InternetAddress(trimmed));
+                    added++;
                 }
             }
+        }
+        if (added == 0) {
+            throw new IllegalStateException(
+                "email_recipients is empty — no recipients to send the spreadsheet to (usrID="
+                + run.usrID() + ")");
         }
 
         msg.setSubject(config.emailSubject());
