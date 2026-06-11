@@ -109,4 +109,34 @@ public record AppConfig(Map<String, String> params)
     {
         return getInt("smtp_port", 25);
     }
+
+    public String sharePointClientId()
+    {
+        return require("shrpnt_client_id");
+    }
+
+    public String sharePointTenantId()
+    {
+        return require("shrpnt_tenant_id");
+    }
+
+    public String sharePointSecretId()
+    {
+        return require("shrpnt_secret_id");
+    }
+
+    public String sharePointHost()
+    {
+        return require("shrpnt_host");
+    }
+
+    public String sharePointSiteName()
+    {
+        return require("shrpnt_site_name");
+    }
+
+    public String sharePointTargetDir()
+    {
+        return require("shrpnt_target_dir");
+    }
 }
