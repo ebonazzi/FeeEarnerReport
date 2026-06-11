@@ -59,6 +59,7 @@ public class GenerateAllPastWindow {
             var t = trackerRef[0];
             if (t == null) return;
             int completed = t.completed().get(), total = t.total().get(), failed = t.failed().get();
+            totalLabel.setText("Total: " + total);
             completedLabel.setText("Completed: " + (completed + failed));
             remainingLabel.setText("Remaining: " + Math.max(0, total - completed - failed));
             t.failures().forEach(f -> {
@@ -132,7 +133,7 @@ public class GenerateAllPastWindow {
         stage.showAndWait();
     }
 
-    static TableView<RunInfo> buildRunTable() {
+    public static TableView<RunInfo> buildRunTable() {
         var table = new TableView<RunInfo>();
         var idCol = new TableColumn<RunInfo, String>("Run ID");
         idCol.setPrefWidth(80);
