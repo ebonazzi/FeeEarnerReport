@@ -2,8 +2,10 @@ package net.javalover.feeearner.repository;
 
 import net.javalover.feeearner.TestDataSourceFactory;
 import net.javalover.feeearner.model.*;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,6 +19,19 @@ class ArchiveRepositoryReadIT {
     private static final int RUN = 999_999;       // a test run_id unlikely to collide
     private static final int USR = 999_991;
 
+    private final DataSource ds = TestDataSourceFactory.create();
+    private final ArchiveRepository repo = new ArchiveRepository(ds);
+
+    @AfterEach
+    void cleanup() throws Exception {
+        try (Connection conn = ds.getConnection()) {
+            conn.setAutoCommit(false);
+            repo.writeForFeeEarner(conn, RUN, DAY, USR, true,
+                List.of(), List.of(), List.of(), List.of(), List.of());
+            conn.commit();
+        }
+    }
+
     private FullTaskRow fullTask() {
         return new FullTaskRow("Matter", DAY, "M-1", "Test matter", "Litigation",
             "PC", "Melbourne", "VIC", "Joseph Tran", "LA", "Sup",
@@ -26,8 +41,6 @@ class ArchiveRepositoryReadIT {
 
     @Test
     void writeThenReadRoundTripsFullTaskRows() throws Exception {
-        var ds = TestDataSourceFactory.create();
-        var repo = new ArchiveRepository(ds);
         try (Connection conn = ds.getConnection()) {
             conn.setAutoCommit(false);
             try {
@@ -48,13 +61,5 @@ class ArchiveRepositoryReadIT {
 
         var ids = repo.getFeeEarnerIdsForRun(RUN);
         assertTrue(ids.contains(USR));
-
-        // cleanup
-        try (Connection conn = ds.getConnection()) {
-            conn.setAutoCommit(false);
-            repo.writeForFeeEarner(conn, RUN, DAY, USR, true,
-                List.of(), List.of(), List.of(), List.of(), List.of());
-            conn.commit();
-        }
     }
 }
