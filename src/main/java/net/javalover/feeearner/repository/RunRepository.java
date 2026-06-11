@@ -81,6 +81,36 @@ public class RunRepository {
         }
     }
 
+    /**
+     * Replaces the stored spreadsheet of a fee earner's <em>most recent</em> run row
+     * (highest run_id) and stamps {@code stored_at = now}. Used by past-run regeneration:
+     * the regenerated workbook becomes the current spreadsheet, regardless of which run it
+     * was rebuilt from. Manages its own connection (not a transaction participant).
+     */
+    public void updateMostRecentFeeEarnerBlob(int usrID, String filename, byte[] xlsx) {
+        var sql = "UPDATE report.FeeEarnersRun " +
+                  "SET excel_filename=?, excel_spreadsheet=?, stored_at=GETDATE() " +
+                  "WHERE run_id = (SELECT TOP 1 run_id FROM report.FeeEarnersRun " +
+                  "                WHERE usrID=? ORDER BY run_id DESC) " +
+                  "  AND usrID=?";
+        try (var conn = ds.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, filename);
+            stmt.setBytes(2, xlsx);
+            stmt.setInt(3, usrID);
+            stmt.setInt(4, usrID);
+            int updated = stmt.executeUpdate();
+            if (updated == 0) {
+                throw new IllegalStateException(
+                    "No FeeEarnersRun row to update for usrID=" + usrID +
+                    " (regeneration requires an existing run row)");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                "Failed to update most-recent blob for usrID=" + usrID, e);
+        }
+    }
+
     public List<RunInfo> getAllRuns() {
         var sql = "SELECT run_id, day_run, started_at, finished_at " +
                   "FROM report.spreadsheet_run ORDER BY started_at DESC";

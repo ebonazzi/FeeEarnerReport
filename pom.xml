@@ -22,6 +22,7 @@
         <mail.api.version>2.1.3</mail.api.version>
         <angus.version>2.0.3</angus.version>
         <junit.version>5.11.4</junit.version>
+        <jackson.version>2.18.2</jackson.version>
         <main.class>net.javalover.feeearner.FxApplication</main.class>
     </properties>
 
@@ -99,6 +100,14 @@
             <groupId>org.eclipse.angus</groupId>
             <artifactId>angus-mail</artifactId>
             <version>${angus.version}</version>
+        </dependency>
+
+        <!-- JSON parsing for Microsoft Graph (SharePoint) REST calls.
+             The HTTP client itself is java.net.http.HttpClient from the JDK. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
 
         <!-- Test -->

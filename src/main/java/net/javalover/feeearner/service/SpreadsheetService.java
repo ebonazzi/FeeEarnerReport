@@ -90,6 +90,73 @@ public class SpreadsheetService {
         }
     }
 
+    /**
+     * Rebuilds one fee earner's spreadsheet from the archive tables of {@code runId} and
+     * stores it as that fee earner's MOST RECENT spreadsheet (blob replaced, stored_at=now).
+     * The archive tables are the read-only source and are not modified. Requires an existing
+     * FeeEarnersRun row for the fee earner.
+     */
+    public void generateFromArchive(int usrID, int runId, AppConfig config) {
+        var fullTask   = archiveRepo.readFullTask(runId, usrID);
+        var limitation = archiveRepo.readLimitation(runId, usrID);
+        var aged       = archiveRepo.readAged(runId, usrID);
+        var duplicate  = archiveRepo.readDuplicate(runId, usrID);
+        var highVolume = archiveRepo.readHighVolume(runId, usrID);
+
+        byte[] xlsx;
+        try {
+            xlsx = workbookBuilder.build(fullTask, limitation, aged, duplicate, highVolume);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to build workbook for usrID=" + usrID, e);
+        }
+
+        var recent = runRepo.getMostRecent(usrID)
+            .orElseThrow(() -> new IllegalStateException(
+                "No FeeEarnersRun row for usrID=" + usrID + "; cannot regenerate"));
+        String filename = "fe_" + usrID + "_" + LocalDate.now().format(DATE_FMT)
+                          + "_" + recent.runId() + ".xlsx";
+        runRepo.updateMostRecentFeeEarnerBlob(usrID, filename, xlsx);
+    }
+
+    /**
+     * Regenerates every fee earner present in {@code runId}'s archive, recording per-fee-earner
+     * failures in the tracker and continuing the batch (one bad fee earner never aborts it).
+     */
+    public void generateAllFromArchive(int runId, AppConfig config, ProgressTracker tracker) {
+        var ids = archiveRepo.getFeeEarnerIdsForRun(runId);
+        tracker.total().set(ids.size());
+        var pool = Executors.newFixedThreadPool(config.threadPoolSize());
+        var completion = new ExecutorCompletionService<Void>(pool);
+
+        for (var usrID : ids) {
+            completion.submit(() -> {
+                try {
+                    generateFromArchive(usrID, runId, config);
+                    tracker.completed().incrementAndGet();
+                } catch (Exception e) {
+                    log.error("Failed to regenerate from archive for usrID={} run={}", usrID, runId, e);
+                    tracker.failed().incrementAndGet();
+                    tracker.failures().add(new FailedEntry(usrID, String.valueOf(usrID), e.getMessage()));
+                }
+                return null;
+            });
+        }
+        try {
+            for (int i = 0; i < ids.size(); i++) {
+                try {
+                    completion.take().get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (ExecutionException ignored) {
+                    // handled inside the Callable
+                }
+            }
+        } finally {
+            pool.shutdown();
+        }
+    }
+
     private void doGenerate(FeeEarner fe, Set<Integer> intersectIds,
                             int runId, LocalDate dayRun, AppConfig config,
                             boolean isNewRun) throws IOException {
