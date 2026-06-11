@@ -13,6 +13,7 @@ import net.javalover.feeearner.excel.WorkbookBuilder;
 import net.javalover.feeearner.logging.LoggingInitialiser;
 import net.javalover.feeearner.repository.*;
 import net.javalover.feeearner.service.*;
+import net.javalover.feeearner.sharepoint.SharePointService;
 import net.javalover.feeearner.ui.MainWindow;
 
 import java.util.Objects;
@@ -54,7 +55,7 @@ public class FxApplication extends Application
 
             var feeEarnerRepo = new FeeEarnerRepository(ds);
             var worksheetRepo = new WorksheetRepository(ds);
-            var archiveRepo = new ArchiveRepository();
+            var archiveRepo = new ArchiveRepository(ds);
             var runRepo = new RunRepository(ds);
 
             var runSvc = new RunService(runRepo);
@@ -62,10 +63,12 @@ public class FxApplication extends Application
                     ds, worksheetRepo, archiveRepo, runRepo, feeEarnerRepo, new WorkbookBuilder());
             var mailSender = new MailSender(config);
             var emailSvc = new EmailService(mailSender, runRepo);
+            var sharePointSvc = new SharePointService();
+            var deploySvc = new DeployService(sharePointSvc, runRepo);
             var paramSvc = new ParameterService(paramRepo);
 
             new MainWindow(paramSvc, runRepo, spreadsheetSvc, runSvc,
-                    emailSvc, feeEarnerRepo, config)
+                    emailSvc, deploySvc, feeEarnerRepo, config)
                     .show(primaryStage);
 
         }
