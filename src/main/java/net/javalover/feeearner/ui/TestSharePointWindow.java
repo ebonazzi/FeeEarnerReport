@@ -7,6 +7,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -43,7 +44,6 @@ public class TestSharePointWindow {
         var resultArea = new TextArea();
         resultArea.setEditable(false);
         resultArea.setWrapText(true);
-        VBox.setVgrow(resultArea, javafx.scene.layout.Priority.ALWAYS);
 
         var testBtn = new Button("Test");
         testBtn.setOnAction(e -> resultArea.setText(runTest()));
@@ -57,7 +57,7 @@ public class TestSharePointWindow {
 
         var center = new VBox(8, paramsArea, resultArea);
         center.setPadding(new Insets(12, 12, 0, 12));
-        VBox.setVgrow(resultArea, javafx.scene.layout.Priority.ALWAYS);
+        VBox.setVgrow(resultArea, Priority.ALWAYS);
 
         var root = new BorderPane();
         root.setCenter(center);

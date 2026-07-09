@@ -23,7 +23,7 @@ import java.util.List;
  * uploader: client-credentials token, site/drive resolution, then a simple PUT (&le;4 MB) or
  * a resumable upload session in 10 MB chunks (&gt;4 MB). Built on the JDK HttpClient + Jackson.
  *
- * <p>The four network methods are {@code public} and non-final so they can be overridden in
+ * <p>The five network methods are {@code public} and non-final so they can be overridden in
  * unit tests; the URL/chunk helpers are static and pure.
  */
 public class SharePointService {
