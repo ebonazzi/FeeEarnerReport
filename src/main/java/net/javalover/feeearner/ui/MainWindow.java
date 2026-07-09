@@ -85,7 +85,10 @@ public class MainWindow {
         var deploySingle = new MenuItem("Deploy Single Spreadsheet");
         deploySingle.setOnAction(e ->
             new SingleDeployWindow(deploySvc, feeEarnerRepo, config).show(primaryStage));
-        var sharepointMenu = new Menu("Sharepoint Deployment", null, deployAll, deploySingle);
+        var testSharepoint = new MenuItem("Test Sharepoint");
+        testSharepoint.setOnAction(e ->
+            new TestSharePointWindow(deploySvc, config).show(primaryStage));
+        var sharepointMenu = new Menu("Sharepoint Deployment", null, deployAll, deploySingle, testSharepoint);
 
         var menuBar = new MenuBar(parametersMenu, runsMenu, generationMenu,
             emailMenu, sharepointMenu);
