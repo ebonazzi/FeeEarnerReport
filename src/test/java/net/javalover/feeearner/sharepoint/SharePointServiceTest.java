@@ -41,6 +41,12 @@ class SharePointServiceTest {
     }
 
     @Test
+    void deleteUrlOmitsContentSuffix() {
+        var url = SharePointService.deleteUrl("drv1", "Folder", "f.xlsx");
+        assertEquals("https://graph.microsoft.com/v1.0/drives/drv1/root:/Folder/f.xlsx", url);
+    }
+
+    @Test
     void contentRangeHeaderFormat() {
         assertEquals("bytes 0-9/100", SharePointService.contentRange(0, 9, 100));
         assertEquals("bytes 10-19/100", SharePointService.contentRange(10, 19, 100));

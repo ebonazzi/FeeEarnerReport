@@ -81,6 +81,15 @@ public class SharePointService {
         }
     }
 
+    public void delete(String token, String driveId, String targetDir, String filename) {
+        var req = HttpRequest.newBuilder(URI.create(deleteUrl(driveId, targetDir, filename)))
+            .header("Authorization", "Bearer " + token)
+            .DELETE()
+            .build();
+        sendString(req, "delete of " + filename);
+        log.info("Deleted '{}' from SharePoint.", filename);
+    }
+
     private void simpleUpload(String token, String driveId, String targetDir,
                               String filename, byte[] bytes) {
         var req = HttpRequest.newBuilder(URI.create(simpleUploadUrl(driveId, targetDir, filename)))
@@ -178,6 +187,10 @@ public class SharePointService {
     static String createUploadSessionUrl(String driveId, String targetDir, String filename) {
         return GRAPH + "/drives/" + driveId + "/root:/" + graphPath(targetDir, filename)
             + ":/createUploadSession";
+    }
+
+    static String deleteUrl(String driveId, String targetDir, String filename) {
+        return GRAPH + "/drives/" + driveId + "/root:/" + graphPath(targetDir, filename);
     }
 
     static String contentRange(long start, long end, long total) {
