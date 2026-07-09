@@ -5,9 +5,13 @@ import net.javalover.feeearner.model.*;
 import net.javalover.feeearner.repository.RunRepository;
 import net.javalover.feeearner.sharepoint.SharePointService;
 import org.junit.jupiter.api.Test;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,6 +37,27 @@ class DeployServiceTest {
     void sharePointFileNameFormat() {
         assertEquals("Fee Earner_35189_Joseph Tran_VIC_task_report.xlsx",
             DeployService.sharePointFileName(35189, "Joseph Tran"));
+    }
+
+    @Test
+    void testFilenameFormat() {
+        var clock = Clock.fixed(Instant.parse("2026-07-09T14:32:01Z"), ZoneOffset.UTC);
+        assertEquals("sharepoint_test_20260709_143201.txt", DeployService.testFilename(clock));
+    }
+
+    @Test
+    void randomContentHasRequestedLength() {
+        byte[] bytes = DeployService.randomContent(512, new Random(42));
+        assertEquals(512, bytes.length);
+    }
+
+    @Test
+    void randomContentOnlyUsesAlphanumericAscii() {
+        byte[] bytes = DeployService.randomContent(200, new Random(1));
+        for (byte b : bytes) {
+            char c = (char) b;
+            assertTrue(Character.isLetterOrDigit(c) && c < 128, "unexpected char: " + c);
+        }
     }
 
     /** Records each upload's filename; resolves token/site/drive once. */
@@ -101,5 +126,57 @@ class DeployServiceTest {
         };
         var svc = new DeployService(sp, runRepo);
         assertThrows(IllegalStateException.class, () -> svc.deployForFeeEarner(1, config()));
+    }
+
+    @Test
+    void testConnectionReturnsFilenameOnSuccess() {
+        var deleted = new CopyOnWriteArrayList<String>();
+        var sp = new SharePointService() {
+            @Override public String acquireToken(AppConfig c) { return "tok"; }
+            @Override public String resolveSiteId(String t, AppConfig c) { return "site"; }
+            @Override public String resolveDriveId(String t, String s) { return "drive"; }
+            @Override public void upload(String t, String d, String dir, String file, byte[] b) { }
+            @Override public void delete(String t, String d, String dir, String file) { deleted.add(file); }
+        };
+        var svc = new DeployService(sp, new RunRepository(null));
+        var result = svc.testConnection(config());
+
+        assertNotNull(result.filename());
+        assertTrue(result.filename().startsWith("sharepoint_test_"));
+        assertNull(result.cleanupWarning());
+        assertEquals(List.of(result.filename()), deleted);
+    }
+
+    @Test
+    void testConnectionReportsCleanupWarningWhenDeleteFails() {
+        var sp = new SharePointService() {
+            @Override public String acquireToken(AppConfig c) { return "tok"; }
+            @Override public String resolveSiteId(String t, AppConfig c) { return "site"; }
+            @Override public String resolveDriveId(String t, String s) { return "drive"; }
+            @Override public void upload(String t, String d, String dir, String file, byte[] b) { }
+            @Override public void delete(String t, String d, String dir, String file) {
+                throw new RuntimeException("cleanup boom");
+            }
+        };
+        var svc = new DeployService(sp, new RunRepository(null));
+        var result = svc.testConnection(config());
+
+        assertNotNull(result.filename());
+        assertEquals("cleanup boom", result.cleanupWarning());
+    }
+
+    @Test
+    void testConnectionPropagatesUploadFailure() {
+        var sp = new SharePointService() {
+            @Override public String acquireToken(AppConfig c) { return "tok"; }
+            @Override public String resolveSiteId(String t, AppConfig c) { return "site"; }
+            @Override public String resolveDriveId(String t, String s) { return "drive"; }
+            @Override public void upload(String t, String d, String dir, String file, byte[] b) {
+                throw new RuntimeException("graph down");
+            }
+        };
+        var svc = new DeployService(sp, new RunRepository(null));
+        var ex = assertThrows(RuntimeException.class, () -> svc.testConnection(config()));
+        assertEquals("graph down", ex.getMessage());
     }
 }

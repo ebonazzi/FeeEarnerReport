@@ -9,7 +9,13 @@ import net.javalover.feeearner.sharepoint.SharePointService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Uploads stored spreadsheets to SharePoint. Mirrors {@link EmailService}: a per-fee-earner
@@ -19,6 +25,10 @@ import java.util.List;
 public class DeployService {
 
     private static final Logger log = LoggerFactory.getLogger(DeployService.class);
+    private static final DateTimeFormatter TEST_FILENAME_FMT =
+        DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    private static final String RANDOM_CHARS =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     private final SharePointService sharePoint;
     private final RunRepository runRepo;
@@ -31,6 +41,18 @@ public class DeployService {
     /** SharePoint upload name, e.g. {@code Fee Earner_35189_Joseph Tran_VIC_task_report.xlsx}. */
     public static String sharePointFileName(int usrID, String feeEarnerName) {
         return "Fee Earner_" + usrID + "_" + feeEarnerName + "_VIC_task_report.xlsx";
+    }
+
+    static String testFilename(Clock clock) {
+        return "sharepoint_test_" + LocalDateTime.now(clock).format(TEST_FILENAME_FMT) + ".txt";
+    }
+
+    static byte[] randomContent(int length, Random random) {
+        var sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(RANDOM_CHARS.charAt(random.nextInt(RANDOM_CHARS.length())));
+        }
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     public void deployAll(List<FeeEarnerRun> runs, AppConfig config, ProgressTracker tracker) {
@@ -60,6 +82,24 @@ public class DeployService {
         String siteId  = sharePoint.resolveSiteId(token, config);
         String driveId = sharePoint.resolveDriveId(token, siteId);
         uploadOne(token, driveId, config, run);
+    }
+
+    public SharePointTestResult testConnection(AppConfig config) {
+        String filename = testFilename(Clock.systemDefaultZone());
+        byte[] content  = randomContent(512, new SecureRandom());
+
+        String token   = sharePoint.acquireToken(config);
+        String siteId  = sharePoint.resolveSiteId(token, config);
+        String driveId = sharePoint.resolveDriveId(token, siteId);
+        sharePoint.upload(token, driveId, config.sharePointTargetDir(), filename, content);
+
+        try {
+            sharePoint.delete(token, driveId, config.sharePointTargetDir(), filename);
+            return new SharePointTestResult(filename, null);
+        } catch (Exception e) {
+            log.warn("Test file '{}' uploaded but cleanup delete failed", filename, e);
+            return new SharePointTestResult(filename, e.getMessage());
+        }
     }
 
     private void uploadOne(String token, String driveId, AppConfig config, FeeEarnerRun run) {
