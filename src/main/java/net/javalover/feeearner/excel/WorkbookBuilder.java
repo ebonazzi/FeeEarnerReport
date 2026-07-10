@@ -1,6 +1,7 @@
 package net.javalover.feeearner.excel;
 
 import net.javalover.feeearner.model.*;
+import org.apache.poi.ss.usermodel.SheetVisibility;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.ByteArrayOutputStream;
@@ -31,6 +32,10 @@ public class WorkbookBuilder {
                 wb.createSheet("Duplicate"), duplicate, dateStyle);
             new HighVolumeSheetBuilder().build(
                 wb.createSheet("High Volume"), highVolume, dateStyle);
+
+            // Data must exist for archival/reporting purposes, but users should not see it
+            // directly — only recoverable via the VBA editor.
+            wb.setSheetVisibility(0, SheetVisibility.VERY_HIDDEN);
 
             var out = new ByteArrayOutputStream();
             wb.write(out);

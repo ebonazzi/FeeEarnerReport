@@ -113,8 +113,8 @@ public class SpreadsheetService {
         var recent = runRepo.getMostRecent(usrID)
             .orElseThrow(() -> new IllegalStateException(
                 "No FeeEarnersRun row for usrID=" + usrID + "; cannot regenerate"));
-        String filename = "fe_" + usrID + "_" + LocalDate.now().format(DATE_FMT)
-                          + "_" + recent.runId() + ".xlsx";
+        String filename = recent.feeEarner() + "_VIC_Task_Report_"
+                          + LocalDate.now().format(DATE_FMT) + ".xlsx";
         runRepo.updateMostRecentFeeEarnerBlob(usrID, filename, xlsx);
     }
 
@@ -188,7 +188,7 @@ public class SpreadsheetService {
 
         byte[] xlsx = workbookBuilder.build(fullTask, limitation, aged, duplicate, highVolume);
 
-        String filename = "fe_" + fe.usrID() + "_" + dayRun.format(DATE_FMT) + "_" + runId + ".xlsx";
+        String filename = fe.feeEarner() + "_VIC_Task_Report_" + dayRun.format(DATE_FMT) + ".xlsx";
         Path file = Path.of(config.outputDir()).resolve(filename);
         Files.write(file, xlsx);
         try {

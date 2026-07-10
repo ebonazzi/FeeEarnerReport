@@ -68,9 +68,10 @@ class SpreadsheetServiceArchiveTest {
         svc.generateFromArchive(100, 3, config());     // source run = 3, most-recent run = 7
         assertEquals(1, stored.size());
         var entry = stored.get(0);                     // "usrID:filename:blobLen"
-        assertTrue(entry.startsWith("100:fe_100_"), "uses standard DB filename with usrID");
-        assertTrue(entry.contains("_7.xlsx:"),
-            "filename uses the most-recent runId (7), not the source run (3)");
+        assertTrue(entry.startsWith("100:Joseph Tran_VIC_Task_Report_"),
+            "uses the fee earner's name, not their usrID");
+        assertTrue(entry.matches("100:Joseph Tran_VIC_Task_Report_\\d{8}\\.xlsx:\\d+"),
+            "filename carries today's date, not a runId");
     }
 
     @Test

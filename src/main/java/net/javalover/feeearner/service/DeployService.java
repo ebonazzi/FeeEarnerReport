@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.Random;
 public class DeployService {
 
     private static final Logger log = LoggerFactory.getLogger(DeployService.class);
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final DateTimeFormatter TEST_FILENAME_FMT =
         DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     private static final String RANDOM_CHARS =
@@ -38,9 +40,9 @@ public class DeployService {
         this.runRepo = runRepo;
     }
 
-    /** SharePoint upload name, e.g. {@code Fee Earner_35189_Joseph Tran_VIC_task_report.xlsx}. */
-    public static String sharePointFileName(int usrID, String feeEarnerName) {
-        return "Fee Earner_" + usrID + "_" + feeEarnerName + "_VIC_task_report.xlsx";
+    /** SharePoint upload name, e.g. {@code Jaz Goddard_VIC_Task_Report_20260710.xlsx}. */
+    public static String sharePointFileName(String feeEarnerName, LocalDate dayRun) {
+        return feeEarnerName + "_VIC_Task_Report_" + dayRun.format(DATE_FMT) + ".xlsx";
     }
 
     static String testFilename(Clock clock) {
@@ -107,7 +109,7 @@ public class DeployService {
             throw new IllegalStateException(
                 "No stored spreadsheet for usrID=" + run.usrID());
         }
-        String filename = sharePointFileName(run.usrID(), run.feeEarner());
+        String filename = sharePointFileName(run.feeEarner(), run.dayRun());
         sharePoint.upload(token, driveId, config.sharePointTargetDir(),
             filename, run.excelSpreadsheet());
     }

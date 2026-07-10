@@ -1,6 +1,7 @@
 package net.javalover.feeearner.excel;
 
 import net.javalover.feeearner.model.*;
+import org.apache.poi.ss.usermodel.SheetVisibility;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
@@ -83,6 +84,14 @@ class WorkbookBuilderTest {
             // Matter Name/Description is column index 2 (Type=0, Matter Number=1)
             assertEquals(70 * 256, wb.getSheetAt(0).getColumnWidth(2),
                 "A long column must be capped at 70 characters wide");
+        }
+    }
+
+    @Test
+    void firstSheetIsVeryHidden() throws IOException {
+        var bytes = new WorkbookBuilder().build(List.of(), List.of(), List.of(), List.of(), List.of());
+        try (var wb = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+            assertEquals(SheetVisibility.VERY_HIDDEN, wb.getSheetVisibility(0));
         }
     }
 

@@ -35,8 +35,8 @@ class DeployServiceTest {
 
     @Test
     void sharePointFileNameFormat() {
-        assertEquals("Fee Earner_35189_Joseph Tran_VIC_task_report.xlsx",
-            DeployService.sharePointFileName(35189, "Joseph Tran"));
+        assertEquals("Joseph Tran_VIC_Task_Report_20260605.xlsx",
+            DeployService.sharePointFileName("Joseph Tran", LocalDate.of(2026, 6, 5)));
     }
 
     @Test
@@ -82,8 +82,8 @@ class DeployServiceTest {
 
         assertEquals(2, tracker.completed().get());
         assertEquals(1, tokenCalls[0], "token/site/drive resolved once per batch");
-        assertTrue(uploads.contains("Fee Earner_1_Joseph Tran_VIC_task_report.xlsx"));
-        assertTrue(uploads.contains("Fee Earner_2_Mary Lee_VIC_task_report.xlsx"));
+        assertTrue(uploads.contains("Joseph Tran_VIC_Task_Report_20260605.xlsx"));
+        assertTrue(uploads.contains("Mary Lee_VIC_Task_Report_20260605.xlsx"));
     }
 
     @Test
@@ -115,7 +115,7 @@ class DeployServiceTest {
         var svc = new DeployService(sp, runRepo);
         svc.deployForFeeEarner(35189, config());
         assertEquals(1, uploads.size());
-        assertEquals("Fee Earner_35189_Joseph Tran_VIC_task_report.xlsx", uploads.get(0));
+        assertEquals("Joseph Tran_VIC_Task_Report_20260605.xlsx", uploads.get(0));
     }
 
     @Test
