@@ -19,7 +19,9 @@ import net.javalover.feeearner.service.SpreadsheetService;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class SingleGenerateWindow {
@@ -28,6 +30,8 @@ public class SingleGenerateWindow {
     private final RunRepository runRepo;
     private final FeeEarnerRepository feeEarnerRepo;
     private final AppConfig config;
+    private TableView<FeeEarner> table;
+    private final Set<Integer> inFlightUsrIds = new HashSet<>();
 
     public SingleGenerateWindow(SpreadsheetService spreadsheetSvc,
                                 RunRepository runRepo,
@@ -50,7 +54,7 @@ public class SingleGenerateWindow {
         stage.setWidth(700);
         stage.setHeight(500);
 
-        var table = buildTable(stage);
+        table = buildTable(stage);
         table.setItems(FXCollections.observableArrayList(feeEarners));
 
         var closeBtn = new Button("Close");
@@ -100,7 +104,13 @@ public class SingleGenerateWindow {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                setGraphic(empty ? null : btn);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    var fe = getTableView().getItems().get(getIndex());
+                    btn.setDisable(inFlightUsrIds.contains(fe.usrID()));
+                    setGraphic(btn);
+                }
             }
         });
 
@@ -117,21 +127,15 @@ public class SingleGenerateWindow {
                       "A bulk run must be completed first.");
             return;
         }
-        try {
-            spreadsheetSvc.generateForFeeEarner(
-                    fe,
-                    mostRecent.get().runId(),
-                    LocalDate.now(),
-                    config,
-                    evt -> {});
-            showAlert(owner, Alert.AlertType.INFORMATION,
-                      "Success",
-                      "Spreadsheet generated for " + fe.feeEarner());
-        } catch (Exception ex) {
-            showAlert(owner, Alert.AlertType.ERROR,
-                      "Error",
-                      ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
-        }
+        inFlightUsrIds.add(fe.usrID());
+        table.refresh();
+        GenerationProgressDialog.run(owner, GenerationProgressDialog.Mode.GENERATE, fe.feeEarner(),
+            () -> spreadsheetSvc.generateForFeeEarner(
+                    fe, mostRecent.get().runId(), LocalDate.now(), config, evt -> {}),
+            () -> {
+                inFlightUsrIds.remove(fe.usrID());
+                table.refresh();
+            });
     }
 
     private static void showAlert(Window owner, Alert.AlertType type,
