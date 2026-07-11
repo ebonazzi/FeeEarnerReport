@@ -17,12 +17,16 @@ import net.javalover.feeearner.model.FeeEarnerRun;
 import net.javalover.feeearner.model.RunInfo;
 import net.javalover.feeearner.repository.RunRepository;
 import net.javalover.feeearner.service.SpreadsheetService;
+import java.util.HashSet;
+import java.util.Set;
 
 public class GenerateSinglePastWindow {
 
     private final SpreadsheetService spreadsheetSvc;
     private final RunRepository runRepo;
     private final AppConfig config;
+    private TableView<FeeEarnerRun> feTable;
+    private final Set<Integer> inFlightUsrIds = new HashSet<>();
 
     public GenerateSinglePastWindow(SpreadsheetService spreadsheetSvc, RunRepository runRepo,
                                     AppConfig config) {
@@ -42,7 +46,7 @@ public class GenerateSinglePastWindow {
         var runTable = GenerateAllPastWindow.buildRunTable();
         runTable.setItems(FXCollections.observableArrayList(runRepo.getAllRuns()));
 
-        var feTable = buildFeeEarnerTable(stage);
+        feTable = buildFeeEarnerTable(stage);
 
         runTable.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -> {
             if (sel != null) {
@@ -93,7 +97,13 @@ public class GenerateSinglePastWindow {
             }
             @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                setGraphic(empty ? null : btn);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    var fer = getTableView().getItems().get(getIndex());
+                    btn.setDisable(inFlightUsrIds.contains(fer.usrID()));
+                    setGraphic(btn);
+                }
             }
         });
 
@@ -103,21 +113,13 @@ public class GenerateSinglePastWindow {
     }
 
     private void handleRegenerate(FeeEarnerRun fer, Window owner) {
-        try {
-            spreadsheetSvc.generateFromArchive(fer.usrID(), fer.runId(), config);
-            showAlert(owner, Alert.AlertType.INFORMATION, "Success",
-                "Regenerated spreadsheet for " + fer.feeEarner());
-        } catch (Exception ex) {
-            showAlert(owner, Alert.AlertType.ERROR, "Error",
-                ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
-        }
-    }
-
-    private static void showAlert(Window owner, Alert.AlertType type, String title, String msg) {
-        var alert = new Alert(type, msg, ButtonType.OK);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        if (owner != null) alert.initOwner(owner);
-        alert.showAndWait();
+        inFlightUsrIds.add(fer.usrID());
+        feTable.refresh();
+        GenerationProgressDialog.run(owner, GenerationProgressDialog.Mode.REGENERATE, fer.feeEarner(),
+            () -> spreadsheetSvc.generateFromArchive(fer.usrID(), fer.runId(), config),
+            () -> {
+                inFlightUsrIds.remove(fer.usrID());
+                feTable.refresh();
+            });
     }
 }
