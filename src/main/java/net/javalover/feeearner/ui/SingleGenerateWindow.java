@@ -31,6 +31,9 @@ public class SingleGenerateWindow {
     private final FeeEarnerRepository feeEarnerRepo;
     private final AppConfig config;
     private TableView<FeeEarner> table;
+    // Window-instance-scoped: does not survive closing and reopening this window while a
+    // background generation is still running, so that narrow sequence can still race a second
+    // concurrent generation for the same fee earner.
     private final Set<Integer> inFlightUsrIds = new HashSet<>();
 
     public SingleGenerateWindow(SpreadsheetService spreadsheetSvc,

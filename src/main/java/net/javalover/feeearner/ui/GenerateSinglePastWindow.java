@@ -26,6 +26,9 @@ public class GenerateSinglePastWindow {
     private final RunRepository runRepo;
     private final AppConfig config;
     private TableView<FeeEarnerRun> feTable;
+    // Window-instance-scoped: does not survive closing and reopening this window while a
+    // background regeneration is still running, so that narrow sequence can still race a second
+    // concurrent regeneration for the same fee earner.
     private final Set<Integer> inFlightUsrIds = new HashSet<>();
 
     public GenerateSinglePastWindow(SpreadsheetService spreadsheetSvc, RunRepository runRepo,
