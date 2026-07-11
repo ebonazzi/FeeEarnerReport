@@ -4,7 +4,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import net.javalover.feeearner.config.AppConfig;
 import net.javalover.feeearner.repository.*;
 import net.javalover.feeearner.service.*;
 
@@ -17,13 +16,11 @@ public class MainWindow {
     private final EmailService emailSvc;
     private final DeployService deploySvc;
     private final FeeEarnerRepository feeEarnerRepo;
-    // Config is loaded at startup; changes via ParameterEditorWindow take effect on next app start.
-    private final AppConfig config;
 
     public MainWindow(ParameterService paramSvc, RunRepository runRepo,
                       SpreadsheetService spreadsheetSvc, RunService runSvc,
                       EmailService emailSvc, DeployService deploySvc,
-                      FeeEarnerRepository feeEarnerRepo, AppConfig config) {
+                      FeeEarnerRepository feeEarnerRepo) {
         this.paramSvc       = paramSvc;
         this.runRepo        = runRepo;
         this.spreadsheetSvc = spreadsheetSvc;
@@ -31,7 +28,6 @@ public class MainWindow {
         this.emailSvc       = emailSvc;
         this.deploySvc      = deploySvc;
         this.feeEarnerRepo  = feeEarnerRepo;
-        this.config         = config;
     }
 
     public void show(Stage primaryStage) {
@@ -50,19 +46,19 @@ public class MainWindow {
         // ── Spreadsheet Generation ──
         var generateAll = new MenuItem("Generate All Spreadsheets");
         generateAll.setOnAction(e ->
-            new GenerateAllWindow(spreadsheetSvc, runSvc, feeEarnerRepo, config)
+            new GenerateAllWindow(spreadsheetSvc, runSvc, feeEarnerRepo, paramSvc.load())
                 .show(primaryStage));
         var generateSingle = new MenuItem("Generate Single Spreadsheet");
         generateSingle.setOnAction(e ->
-            new SingleGenerateWindow(spreadsheetSvc, runRepo, feeEarnerRepo, config)
+            new SingleGenerateWindow(spreadsheetSvc, runRepo, feeEarnerRepo, paramSvc.load())
                 .show(primaryStage));
         var generateAllPast = new MenuItem("Generate All Past Spreadsheets");
         generateAllPast.setOnAction(e ->
-            new GenerateAllPastWindow(spreadsheetSvc, runRepo, config)
+            new GenerateAllPastWindow(spreadsheetSvc, runRepo, paramSvc.load())
                 .show(primaryStage));
         var generateSinglePast = new MenuItem("Generate Single Past Spreadsheets");
         generateSinglePast.setOnAction(e ->
-            new GenerateSinglePastWindow(spreadsheetSvc, runRepo, config)
+            new GenerateSinglePastWindow(spreadsheetSvc, runRepo, paramSvc.load())
                 .show(primaryStage));
         var generationMenu = new Menu("Spreadsheet Generation", null,
             generateAll, generateSingle, generateAllPast, generateSinglePast);
@@ -70,24 +66,24 @@ public class MainWindow {
         // ── Email Send ──
         var emailAll = new MenuItem("Email All Spreadsheets");
         emailAll.setOnAction(e ->
-            new EmailAllWindow(emailSvc, runRepo, feeEarnerRepo, config)
+            new EmailAllWindow(emailSvc, runRepo, feeEarnerRepo, paramSvc.load())
                 .show(primaryStage));
         var emailSingle = new MenuItem("Email Single Spreadsheet");
         emailSingle.setOnAction(e ->
-            new SingleEmailWindow(emailSvc, runRepo, feeEarnerRepo, config)
+            new SingleEmailWindow(emailSvc, runRepo, feeEarnerRepo, paramSvc.load())
                 .show(primaryStage));
         var emailMenu = new Menu("Email Send", null, emailAll, emailSingle);
 
         // ── Sharepoint Deployment ──
         var deployAll = new MenuItem("Deploy All Spreadsheets");
         deployAll.setOnAction(e ->
-            new DeployAllWindow(deploySvc, runRepo, config).show(primaryStage));
+            new DeployAllWindow(deploySvc, runRepo, paramSvc.load()).show(primaryStage));
         var deploySingle = new MenuItem("Deploy Single Spreadsheet");
         deploySingle.setOnAction(e ->
-            new SingleDeployWindow(deploySvc, feeEarnerRepo, config).show(primaryStage));
+            new SingleDeployWindow(deploySvc, feeEarnerRepo, paramSvc.load()).show(primaryStage));
         var testSharepoint = new MenuItem("Test Sharepoint");
         testSharepoint.setOnAction(e ->
-            new TestSharePointWindow(deploySvc, config).show(primaryStage));
+            new TestSharePointWindow(deploySvc, paramSvc.load()).show(primaryStage));
         var sharepointMenu = new Menu("Sharepoint Deployment", null, deployAll, deploySingle, testSharepoint);
 
         var menuBar = new MenuBar(parametersMenu, runsMenu, generationMenu,

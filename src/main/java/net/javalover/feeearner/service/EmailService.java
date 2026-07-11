@@ -27,7 +27,7 @@ public class EmailService {
             .orElseThrow(() -> new IllegalStateException(
                 "No FeeEarnerRun found for usrID=" + usrID + " runId=" + runId));
         try {
-            mailSender.send(run);
+            mailSender.send(run, config);
         } catch (Exception e) {
             throw new RuntimeException("Failed to send email for usrID=" + usrID, e);
         }
@@ -36,7 +36,7 @@ public class EmailService {
     public void sendAll(List<FeeEarnerRun> runs, AppConfig config, ProgressTracker tracker) {
         for (var run : runs) {
             try {
-                mailSender.send(run);
+                mailSender.send(run, config);
                 tracker.completed().incrementAndGet();
             } catch (Exception e) {
                 log.error("Failed to send email for usrID={}", run.usrID(), e);

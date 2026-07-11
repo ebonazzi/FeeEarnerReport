@@ -61,14 +61,14 @@ public class FxApplication extends Application
             var runSvc = new RunService(runRepo);
             var spreadsheetSvc = new SpreadsheetService(
                     ds, worksheetRepo, archiveRepo, runRepo, feeEarnerRepo, new WorkbookBuilder());
-            var mailSender = new MailSender(config);
+            var mailSender = new MailSender();
             var emailSvc = new EmailService(mailSender, runRepo);
             var sharePointSvc = new SharePointService();
             var deploySvc = new DeployService(sharePointSvc, runRepo);
             var paramSvc = new ParameterService(paramRepo);
 
             new MainWindow(paramSvc, runRepo, spreadsheetSvc, runSvc,
-                    emailSvc, deploySvc, feeEarnerRepo, config)
+                    emailSvc, deploySvc, feeEarnerRepo)
                     .show(primaryStage);
 
         }

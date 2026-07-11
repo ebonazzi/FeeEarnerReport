@@ -32,8 +32,8 @@ class EmailServiceTest {
     @Test
     void sendForFeeEarnerDelegatesToMailSender() throws Exception {
         var sent = new AtomicInteger(0);
-        var mailSender = new MailSender(config()) {
-            @Override public void send(FeeEarnerRun run) { sent.incrementAndGet(); }
+        var mailSender = new MailSender() {
+            @Override public void send(FeeEarnerRun run, AppConfig config) { sent.incrementAndGet(); }
         };
         var runRepo = new RunRepository(null) {
             @Override public Optional<FeeEarnerRun> getMostRecent(int usrID) {
@@ -47,8 +47,8 @@ class EmailServiceTest {
 
     @Test
     void sendForFeeEarnerThrowsWhenRunNotFound() {
-        var mailSender = new MailSender(config()) {
-            @Override public void send(FeeEarnerRun run) {}
+        var mailSender = new MailSender() {
+            @Override public void send(FeeEarnerRun run, AppConfig config) {}
         };
         var runRepo = new RunRepository(null) {
             @Override public Optional<FeeEarnerRun> getMostRecent(int usrID) {
@@ -62,8 +62,8 @@ class EmailServiceTest {
 
     @Test
     void sendAllTracksFailures() throws Exception {
-        var mailSender = new MailSender(config()) {
-            @Override public void send(FeeEarnerRun run) throws MessagingException {
+        var mailSender = new MailSender() {
+            @Override public void send(FeeEarnerRun run, AppConfig config) throws MessagingException {
                 throw new MessagingException("smtp down");
             }
         };

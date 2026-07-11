@@ -10,13 +10,7 @@ import java.util.Properties;
 
 public class MailSender {
 
-    private final AppConfig config;
-
-    public MailSender(AppConfig config) {
-        this.config = config;
-    }
-
-    public void send(FeeEarnerRun run) throws MessagingException {
+    public void send(FeeEarnerRun run, AppConfig config) throws MessagingException {
         if (run == null) throw new IllegalArgumentException("run must not be null");
         var props = new Properties();
         props.put("mail.smtp.host", config.smtpServer());

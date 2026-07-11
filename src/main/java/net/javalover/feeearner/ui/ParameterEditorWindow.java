@@ -11,15 +11,18 @@ import javafx.stage.*;
 import net.javalover.feeearner.model.AppParam;
 import net.javalover.feeearner.service.ParameterService;
 
-public class ParameterEditorWindow {
+public class ParameterEditorWindow
+{
 
     private final ParameterService paramSvc;
 
-    public ParameterEditorWindow(ParameterService paramSvc) {
+    public ParameterEditorWindow(ParameterService paramSvc)
+    {
         this.paramSvc = paramSvc;
     }
 
-    public void show(Window owner) {
+    public void show(Window owner)
+    {
         var stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.initOwner(owner);
@@ -38,7 +41,8 @@ public class ParameterEditorWindow {
         valueCol.setCellFactory(TextFieldTableCell.forTableColumn());
         valueCol.setPrefWidth(300);
         valueCol.setEditable(true);
-        valueCol.setOnEditCommit(event -> {
+        valueCol.setOnEditCommit(event ->
+        {
             var old = event.getRowValue();
             var updated = new AppParam(old.paramId(), old.name(), event.getNewValue(), old.active());
             table.getItems().set(event.getTablePosition().getRow(), updated);
@@ -50,10 +54,13 @@ public class ParameterEditorWindow {
         var saveBtn = new Button("Save");
         var cancelBtn = new Button("Cancel");
 
-        saveBtn.setOnAction(e -> {
-            for (var param : table.getItems()) {
+        saveBtn.setOnAction(e ->
+        {
+            for (var param : table.getItems())
+            {
                 var result = ParameterService.validate(param.name(), param.value());
-                if (!result.valid()) {
+                if (!result.valid())
+                {
                     var alert = new Alert(Alert.AlertType.ERROR);
                     alert.setTitle("Validation Error");
                     alert.setHeaderText("Invalid value for: " + param.name());
@@ -62,11 +69,14 @@ public class ParameterEditorWindow {
                     return;
                 }
             }
-            try {
+            try
+            {
                 table.getItems().forEach(paramSvc::save);
                 paramSvc.reload();
                 stage.close();
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 var alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Save Failed");
                 alert.setHeaderText("Could not save parameters");
