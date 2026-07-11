@@ -56,7 +56,7 @@ public class MainWindow {
         generateAllPast.setOnAction(e ->
             new GenerateAllPastWindow(spreadsheetSvc, runRepo, paramSvc.load())
                 .show(primaryStage));
-        var generateSinglePast = new MenuItem("Generate Single Past Spreadsheets");
+        var generateSinglePast = new MenuItem("Generate Single Past Spreadsheet");
         generateSinglePast.setOnAction(e ->
             new GenerateSinglePastWindow(spreadsheetSvc, runRepo, paramSvc.load())
                 .show(primaryStage));
